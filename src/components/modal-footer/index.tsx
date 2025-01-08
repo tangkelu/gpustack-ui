@@ -13,6 +13,7 @@ type ModalFooterProps = {
   form?: any;
   loading?: boolean;
   style?: React.CSSProperties;
+  left?: React.ReactNode;
 };
 const ModalFooter: React.FC<ModalFooterProps> = ({
   onOk,
@@ -23,27 +24,35 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
   cancelBtnProps,
   loading,
   htmlType = 'button',
+  left,
   align = 'end',
   style,
   form
 }) => {
   const intl = useIntl();
   return (
-    <Space size={20} style={{ ...style }}>
-      <Button onClick={onCancel} style={{ width: '88px' }} {...cancelBtnProps}>
-        {cancelText || intl.formatMessage({ id: 'common.button.cancel' })}
-      </Button>
-      <Button
-        type="primary"
-        onClick={onOk}
-        style={{ width: '88px' }}
-        loading={loading}
-        htmlType={htmlType}
-        {...okBtnProps}
-      >
-        {okText || intl.formatMessage({ id: 'common.button.save' })}
-      </Button>
-    </Space>
+    <div className="flex-end flex-center">
+      {left}
+      <Space size={20} style={{ ...style }}>
+        <Button
+          onClick={onCancel}
+          style={{ width: '88px' }}
+          {...cancelBtnProps}
+        >
+          {cancelText || intl.formatMessage({ id: 'common.button.cancel' })}
+        </Button>
+        <Button
+          type="primary"
+          onClick={onOk}
+          style={{ width: '88px' }}
+          loading={loading}
+          htmlType={htmlType}
+          {...okBtnProps}
+        >
+          {okText || intl.formatMessage({ id: 'common.button.save' })}
+        </Button>
+      </Space>
+    </div>
   );
 };
 

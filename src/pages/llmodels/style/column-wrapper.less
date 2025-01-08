@@ -3,6 +3,19 @@
   position: relative;
 }
 
+.scroller-wrapper-footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .scroller {
+    width: 100%;
+    flex: 1;
+    overflow: auto;
+  }
+}
+
 .simplebar-scrollbar::before {
   width: var(--scrollbar-size);
   background: var(--scrollbar-handle-bg);

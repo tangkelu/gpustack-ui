@@ -1,3 +1,4 @@
+import AlertInfo from '@/components/alert-info';
 import IconFont from '@/components/icon-font';
 import SealAutoComplete from '@/components/seal-form/auto-complete';
 import SealInput from '@/components/seal-form/seal-input';
@@ -5,7 +6,7 @@ import SealSelect from '@/components/seal-form/seal-select';
 import { PageAction } from '@/config';
 import { PageActionType } from '@/config/types';
 import { useIntl } from '@umijs/max';
-import { Form, Tooltip, Typography } from 'antd';
+import { Form, Tag, Tooltip, Typography } from 'antd';
 import _ from 'lodash';
 import React, {
   forwardRef,
@@ -42,6 +43,9 @@ interface DataFormProps {
   byBuiltIn?: boolean;
   backendOptions?: Global.BaseOption<string>[];
   sourceList?: Global.BaseOption<string>[];
+  fields?: string[];
+  specList?: any[];
+  onSpecChange?: (value: string) => void;
   onSizeChange?: (val: number) => void;
   onQuantizationChange?: (val: string) => void;
   onSourceChange?: (value: string) => void;
@@ -62,8 +66,10 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
     backendOptions,
     sourceList,
     byBuiltIn,
+    specList,
     sizeOptions = [],
     quantizationOptions = [],
+    fields = ['source', 'backend'],
     onSourceChange,
     onOk
   } = props;
@@ -508,7 +514,118 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
           required
         ></SealInput.Input>
       </Form.Item>
-      {
+      {specList && specList?.length > 0 && (
+        <Form.Item name="model_file" rules={[{ required: true }]}>
+          <SealSelect
+            required
+            showSearch
+            onChange={props.onSpecChange}
+            label={'Model File'}
+            options={specList}
+            labelRender={(data: any) => {
+              const item = _.find(specList, { value: data.value });
+              return (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontWeight: 700
+                  }}
+                >
+                  <Tag
+                    color="green"
+                    className="flex-center"
+                    style={{
+                      opacity: 0.65,
+                      height: 22,
+                      borderRadius: 'var(--border-radius-base)'
+                    }}
+                  >
+                    {item.sizeLable}
+                  </Tag>
+                  <Tag
+                    color="cyan"
+                    className="flex-center"
+                    style={{
+                      opacity: 0.65,
+                      height: 22,
+                      borderRadius: 'var(--border-radius-base)'
+                    }}
+                  >
+                    {item.quantization}
+                  </Tag>
+                </div>
+              );
+            }}
+            optionRender={(props: any) => {
+              const { data: item } = props;
+              return (
+                <div
+                  className="flex-column gap-8"
+                  style={{
+                    padding: '8px 0',
+                    borderBottom: '1px solid var(--ant-color-split)'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '10px',
+                      alignItems: 'center',
+                      fontWeight: 700
+                    }}
+                  >
+                    <Tag
+                      color="green"
+                      className="flex-center"
+                      style={{
+                        opacity: 0.65,
+                        height: 22,
+                        borderRadius: 'var(--border-radius-base)'
+                      }}
+                    >
+                      {item.sizeLable}
+                    </Tag>
+                    <Tag
+                      color="cyan"
+                      className="flex-center"
+                      style={{
+                        opacity: 0.65,
+                        height: 22,
+                        borderRadius: 'var(--border-radius-base)'
+                      }}
+                    >
+                      {item.quantization}
+                    </Tag>
+                    <Tag
+                      color="blue"
+                      className="flex-center"
+                      style={{
+                        opacity: 0.65,
+                        height: 22,
+                        borderRadius: 'var(--border-radius-base)'
+                      }}
+                    >
+                      {item.backend}
+                    </Tag>
+                  </div>
+                  <span className="text-secondary">
+                    {item.huggingface_repo_id}
+                  </span>
+                  {!item.compatibility && (
+                    <AlertInfo
+                      style={{ textAlign: 'left' }}
+                      message={item.compatibility_message}
+                      type="warning"
+                    ></AlertInfo>
+                  )}
+                </div>
+              );
+            }}
+          ></SealSelect>
+        </Form.Item>
+      )}
+      {fields?.includes('source') && (
         <Form.Item<FormData>
           name="source"
           rules={[
@@ -535,59 +652,89 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
             ></SealSelect>
           }
         </Form.Item>
-      }
+      )}
 
       {renderFieldsBySource}
-      <Form.Item name="backend" rules={[{ required: true }]}>
-        <SealSelect
-          required
-          onChange={handleBackendChange}
-          label={intl.formatMessage({ id: 'models.form.backend' })}
-          description={
-            <div>
+      {fields.includes('backend') && (
+        <Form.Item name="backend" rules={[{ required: true }]}>
+          <SealSelect
+            required
+            onChange={handleBackendChange}
+            label={intl.formatMessage({ id: 'models.form.backend' })}
+            description={
               <div>
-                1. {intl.formatMessage({ id: 'models.form.backend.llamabox' })}
+                <div>
+                  1.{' '}
+                  {intl.formatMessage({ id: 'models.form.backend.llamabox' })}
+                </div>
+                <div>
+                  2. {intl.formatMessage({ id: 'models.form.backend.vllm' })}
+                </div>
+                <div>
+                  3. {intl.formatMessage({ id: 'models.form.backend.voxbox' })}
+                </div>
               </div>
-              <div>
-                2. {intl.formatMessage({ id: 'models.form.backend.vllm' })}
-              </div>
-              <div>
-                3. {intl.formatMessage({ id: 'models.form.backend.voxbox' })}
-              </div>
-            </div>
-          }
-          options={
-            backendOptions ?? [
-              {
-                label: `llama-box`,
-                value: backendOptionsMap.llamaBox,
-                disabled:
-                  props.source === modelSourceMap.local_path_value
-                    ? false
-                    : !isGGUF
-              },
-              {
-                label: 'vLLM',
-                value: backendOptionsMap.vllm,
-                disabled:
-                  props.source === modelSourceMap.local_path_value
-                    ? false
-                    : isGGUF
-              },
-              {
-                label: 'vox-box',
-                value: backendOptionsMap.voxBox,
-                disabled: props.source === modelSourceMap.ollama_library_value
-              }
-            ]
-          }
-          disabled={
-            action === PageAction.EDIT &&
-            props.source !== modelSourceMap.local_path_value
-          }
-        ></SealSelect>
-      </Form.Item>
-      {renderFieldsFromCatalog}
+            }
+            options={
+              backendOptions ?? [
+                {
+                  label: `llama-box`,
+                  value: backendOptionsMap.llamaBox,
+                  disabled:
+                    props.source === modelSourceMap.local_path_value
+                      ? false
+                      : !isGGUF
+                },
+                {
+                  label: 'vLLM',
+                  value: backendOptionsMap.vllm,
+                  disabled:
+                    props.source === modelSourceMap.local_path_value
+                      ? false
+                      : isGGUF
+                },
+                {
+                  label: 'vox-box',
+                  value: backendOptionsMap.voxBox,
+                  disabled: props.source === modelSourceMap.ollama_library_value
+                }
+              ]
+            }
+            disabled={
+              action === PageAction.EDIT &&
+              props.source !== modelSourceMap.local_path_value
+            }
+          ></SealSelect>
+        </Form.Item>
+      )}
+      {/* {renderFieldsFromCatalog} */}
+      {sizeOptions?.length > 0 && (
+        <Form.Item<FormData>
+          name="size"
+          key="size"
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage(
+                {
+                  id: 'common.form.rule.select'
+                },
+                { name: 'size' }
+              )
+            }
+          ]}
+        >
+          <SealSelect
+            filterOption
+            onChange={handleSizeChange}
+            defaultActiveFirstOption
+            disabled={false}
+            options={sizeOptions}
+            label="Size"
+            required
+          ></SealSelect>
+        </Form.Item>
+      )}
       <Form.Item<FormData>
         name="replicas"
         rules={[
@@ -625,7 +772,12 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
         gpuOptions={gpuOptions}
         isGGUF={isGGUF}
         action={action}
+        backendOptions={backendOptions}
         source={props.source}
+        fields={fields}
+        quantizationOptions={quantizationOptions}
+        onBackendChange={props.onBackendChange}
+        onQuantizationChange={props.onQuantizationChange}
       ></AdvanceConfig>
     </Form>
   );

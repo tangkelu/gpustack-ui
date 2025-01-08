@@ -151,9 +151,10 @@ const Catalog: React.FC = () => {
 
         const modelData = await createModel({
           data: {
-            ..._.omit(data, ['size', 'quantization'])
+            ..._.omit(data, ['size', 'quantization', 'model_file'])
           }
         });
+        console.log('modelData:', data);
         setOpenDeployModal({
           ...openDeployModal,
           show: false

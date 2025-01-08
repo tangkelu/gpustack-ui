@@ -523,6 +523,7 @@ const UpdateModal: React.FC<AddModalProps> = (props) => {
 
           <AdvanceConfig
             form={form}
+            fields={['source', 'backend']}
             gpuOptions={gpuOptions}
             action={PageAction.EDIT}
             source={props.data?.source || ''}

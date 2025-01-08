@@ -3,6 +3,7 @@ import LabelSelector from '@/components/label-selector';
 import ListInput from '@/components/list-input';
 import SealInput from '@/components/seal-form/seal-input';
 import SealSelect from '@/components/seal-form/seal-select';
+import { PageAction } from '@/config';
 import { PageActionType } from '@/config/types';
 import { InfoCircleOutlined, RightOutlined } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
@@ -20,6 +21,7 @@ import {
   backendOptionsMap,
   backendParamsHolderTips,
   modelCategories,
+  modelSourceMap,
   placementStrategyOptions
 } from '../config';
 import llamaConfig from '../config/llama-config';
@@ -34,10 +36,25 @@ interface AdvanceConfigProps {
   gpuOptions: Array<any>;
   action: PageActionType;
   source: string;
+  backendOptions?: Global.BaseOption<string>[];
+  fields?: string[];
+  quantizationOptions?: Global.BaseOption<string>[];
+  onQuantizationChange?: (val: string) => void;
+  onBackendChange?: (value: string) => void;
 }
 
 const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
-  const { form, gpuOptions, isGGUF, action, source } = props;
+  const {
+    form,
+    gpuOptions,
+    isGGUF,
+    action,
+    source,
+    backendOptions,
+    fields,
+    quantizationOptions,
+    onQuantizationChange
+  } = props;
 
   const intl = useIntl();
   const wokerSelector = Form.useWatch('worker_selector', form);
@@ -140,9 +157,102 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
     form.setFieldValue('backend_parameters', list);
   }, []);
 
+  const handleBackendChange = useCallback((val: string) => {
+    if (val === backendOptionsMap.llamaBox) {
+      form.setFieldsValue({
+        distributed_inference_across_workers: true,
+        cpu_offloading: true
+      });
+    }
+    form.setFieldValue('backend_version', '');
+    props.onBackendChange?.(val);
+  }, []);
+
   const collapseItems = useMemo(() => {
     const children = (
       <>
+        {!fields?.includes('backend') && (
+          <Form.Item name="backend" rules={[{ required: true }]}>
+            <SealSelect
+              required
+              onChange={handleBackendChange}
+              label={intl.formatMessage({ id: 'models.form.backend' })}
+              description={
+                <div>
+                  <div>
+                    1.{' '}
+                    {intl.formatMessage({ id: 'models.form.backend.llamabox' })}
+                  </div>
+                  <div>
+                    2. {intl.formatMessage({ id: 'models.form.backend.vllm' })}
+                  </div>
+                  <div>
+                    3.{' '}
+                    {intl.formatMessage({ id: 'models.form.backend.voxbox' })}
+                  </div>
+                </div>
+              }
+              options={
+                backendOptions ?? [
+                  {
+                    label: `llama-box`,
+                    value: backendOptionsMap.llamaBox,
+                    disabled:
+                      props.source === modelSourceMap.local_path_value
+                        ? false
+                        : !isGGUF
+                  },
+                  {
+                    label: 'vLLM',
+                    value: backendOptionsMap.vllm,
+                    disabled:
+                      props.source === modelSourceMap.local_path_value
+                        ? false
+                        : isGGUF
+                  },
+                  {
+                    label: 'vox-box',
+                    value: backendOptionsMap.voxBox,
+                    disabled:
+                      props.source === modelSourceMap.ollama_library_value
+                  }
+                ]
+              }
+              disabled={
+                action === PageAction.EDIT &&
+                props.source !== modelSourceMap.local_path_value
+              }
+            ></SealSelect>
+          </Form.Item>
+        )}
+        {quantizationOptions && quantizationOptions?.length > 0 && (
+          <Form.Item<FormData>
+            name="quantization"
+            key="quantization"
+            rules={[
+              {
+                required: true,
+                message: intl.formatMessage(
+                  {
+                    id: 'common.form.rule.select'
+                  },
+                  { name: 'quantization' }
+                )
+              }
+            ]}
+          >
+            <SealSelect
+              filterOption
+              defaultActiveFirstOption
+              disabled={false}
+              options={quantizationOptions}
+              onChange={onQuantizationChange}
+              label="Quantization"
+              required
+            ></SealSelect>
+          </Form.Item>
+        )}
+
         <Form.Item<FormData> name="categories">
           <SealSelect
             allowNull
@@ -270,6 +380,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
             ></SealSelect>
           </Form.Item>
         )}
+
         <Form.Item name="backend_version">
           <SealInput.Input
             label={intl.formatMessage({ id: 'models.form.backendVersion' })}

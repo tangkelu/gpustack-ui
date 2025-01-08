@@ -1,3 +1,4 @@
+import AlertBlockInfo from '@/components/alert-info/block';
 import ModalFooter from '@/components/modal-footer';
 import { PageActionType } from '@/config/types';
 import { createAxiosToken } from '@/hooks/use-chunk-request';
@@ -10,12 +11,11 @@ import { queryCatalogItemSpec } from '../apis';
 import {
   backendOptionsMap,
   modelCategoriesMap,
-  modelSourceMap,
-  sourceOptions
+  modelSourceMap
 } from '../config';
 import { CatalogSpec, FormData, ListItem } from '../config/types';
-import ColumnWrapper from './column-wrapper';
 import DataForm from './data-form';
+import ScrollerWrapper from './scroller-wrapper';
 
 type AddModalProps = {
   title: string;
@@ -61,6 +61,7 @@ const AddModal: React.FC<AddModalProps> = (props) => {
   const form = useRef<any>({});
   const intl = useIntl();
 
+  const [modelSpec, setModelSpec] = useState<CatalogSpec>(null as any);
   const [isGGUF, setIsGGUF] = useState<boolean>(false);
   const [sourceList, setSourceList] = useState<any[]>([]);
   const [backendList, setBackendList] = useState<any[]>([]);
@@ -69,9 +70,185 @@ const AddModal: React.FC<AddModalProps> = (props) => {
   const sourceGroupMap = useRef<any>({});
   const axiosToken = useRef<any>(null);
   const selectSpecRef = useRef<CatalogSpec>({} as CatalogSpec);
+  const sizeOptionsRef = useRef<any[]>([]);
+  const quantizationOptionsRef = useRef<any[]>([]);
+  const backendOptionsRef = useRef<any[]>([]);
+  const modelSpecListRef = useRef<CatalogSpec[]>([]);
+  const [specList, setSpecList] = useState<CatalogSpec[]>([]);
+
+  const [sizeDataList, setSizeDataList] = useState<any[]>([]);
+  const [quantizationDataList, setQuantizationDataList] = useState<any[]>([]);
+  const [backendDataList, setBackendDataList] = useState<any[]>([]);
 
   const handleSumit = () => {
     form.current?.submit?.();
+  };
+
+  const setFinalList = ({
+    sizeList,
+    quantizationList,
+    backendList,
+    size,
+    quantization,
+    backend
+  }: {
+    sizeList: any[];
+    quantizationList: any[];
+    backendList: any[];
+    size: number;
+    quantization: string;
+    backend: string;
+  }) => {
+    console.log('isCamptible===sizeDataList=', {
+      size,
+      quantization,
+      backend
+    });
+    const sizeDataList = _.map(sizeList, (item: any) => {
+      const isCamptible = _.find(
+        modelSpecListRef.current,
+        (spec: CatalogSpec) => {
+          return (
+            spec.size === item.value &&
+            spec.quantization === quantization &&
+            spec.backend === backend &&
+            spec.compatibility
+          );
+        }
+      );
+
+      return {
+        ...item,
+        key: item.value,
+        isCamptible: isCamptible,
+        extra: isCamptible ? '' : 'May be not comptiable on your worker',
+        label: isCamptible ? (
+          item.label
+        ) : (
+          <span>
+            <span>{item.label}</span>
+            <span style={{ color: 'var(--ant-color-warning)' }}>
+              {' '}
+              (May be not comptiable on your worker)
+            </span>
+          </span>
+        )
+      };
+    });
+
+    const quantizationDataList = _.map(quantizationList, (item: any) => {
+      const isCamptible = _.find(
+        modelSpecListRef.current,
+        (spec: CatalogSpec) => {
+          return (
+            spec.quantization === item.value &&
+            spec.size === size &&
+            spec.backend === backend &&
+            spec.compatibility
+          );
+        }
+      );
+      console.log('isCamptible====', isCamptible);
+      return {
+        ...item,
+        isCamptible: isCamptible,
+        key: item.value,
+        extra: isCamptible ? '' : 'May be not comptiable on your worker',
+        label: isCamptible ? (
+          item.label
+        ) : (
+          <span>
+            <span>{item.label}</span>
+            <span style={{ color: 'var(--ant-color-warning)' }}>
+              {' '}
+              (May be not comptiable on your worker)
+            </span>
+          </span>
+        )
+      };
+    });
+
+    const backendDataList = _.map(backendList, (item: any) => {
+      const isCamptible = _.find(
+        modelSpecListRef.current,
+        (spec: CatalogSpec) => {
+          return (
+            spec.backend === item.value &&
+            spec.size === size &&
+            spec.quantization === quantization &&
+            spec.compatibility
+          );
+        }
+      );
+      return {
+        ...item,
+        key: item.value,
+        isCamptible: isCamptible,
+        extra: isCamptible ? '' : 'May be not comptiable on your worker',
+        label: isCamptible ? (
+          item.label
+        ) : (
+          <span>
+            <span>{item.label}</span>
+            <span style={{ color: 'var(--ant-color-warning)' }}>
+              {' '}
+              (May be not comptiable on your worker)
+            </span>
+          </span>
+        )
+      };
+    });
+
+    setSizeDataList(_.uniqBy(sizeDataList, 'value'));
+    setQuantizationDataList(_.uniqBy(quantizationDataList, 'value'));
+    setBackendDataList(_.uniqBy(backendDataList, 'value'));
+  };
+
+  const generateSizeOptions = ({
+    backend,
+    quantization
+  }: {
+    backend: string;
+    quantization: string;
+  }) => {
+    const list = _.filter(sizeOptionsRef.current, (item: any) => {
+      return item.backend === backend && item.quantization === quantization;
+    });
+    setSizeOptions(list);
+    return list;
+  };
+
+  const generateQuantizationOptions = ({
+    backend,
+    size
+  }: {
+    backend: string;
+    size: number;
+  }) => {
+    const list = _.filter(quantizationOptionsRef.current, (item: any) => {
+      return item.backend === backend && item.size === size;
+    });
+    const resultList = _.uniqBy(list, 'value');
+    setQuantizationOptions(resultList);
+    console.log('quantizaList====', resultList);
+    return resultList;
+  };
+
+  const generateBackendOptions = ({
+    size,
+    quantization
+  }: {
+    size: number;
+    quantization: string;
+  }) => {
+    const list = _.filter(backendOptionsRef.current, (item: any) => {
+      return item.size === size;
+    });
+    const resultList = _.uniqBy(list, 'value');
+
+    setBackendList(resultList);
+    console.log('backend====', resultList);
+    return resultList;
   };
 
   const getDefaultQuant = (data: { category: string; quantOption: string }) => {
@@ -114,37 +291,77 @@ const AddModal: React.FC<AddModalProps> = (props) => {
     return modelInfo;
   };
 
+  const findDefaultSpec = (
+    data: {
+      source: string;
+      backend: string;
+      size: number;
+      quantization: string;
+    },
+    item: CatalogSpec
+  ) => {
+    if (data.size && data.quantization) {
+      return (
+        item.size === data.size &&
+        item.backend === data.backend &&
+        item.quantization === data.quantization
+      );
+    }
+    if (data.size) {
+      return item.size === data.size && item.backend === data.backend;
+    }
+    if (data.quantization) {
+      return (
+        item.quantization === data.quantization && item.backend === data.backend
+      );
+    }
+    return item.backend === data.backend;
+  };
   const getModelSpec = (data: {
     source: string;
     backend: string;
     size: number;
     quantization: string;
   }) => {
-    const groupList = sourceGroupMap.current[data.source];
-    const spec = _.find(groupList, (item: CatalogSpec) => {
-      if (data.size && data.quantization) {
-        return (
-          item.size === data.size &&
-          item.backend === data.backend &&
-          item.quantization === data.quantization
-        );
+    const groupList = _.filter(
+      modelSpecListRef.current,
+      (item: CatalogSpec) => {
+        return item.compatibility;
       }
-      if (data.size) {
-        return item.size === data.size && item.backend === data.backend;
-      }
-      if (data.quantization) {
-        return (
-          item.quantization === data.quantization &&
-          item.backend === data.backend
-        );
-      }
-      return item.backend === data.backend;
+    );
+    let spec = _.find(groupList, (item: CatalogSpec) => {
+      return findDefaultSpec(data, item);
     });
+
+    if (!spec) {
+      spec = _.find(modelSpecListRef.current, (item: CatalogSpec) => {
+        return findDefaultSpec(data, item);
+      });
+    }
+
     selectSpecRef.current = spec;
+    setModelSpec(spec);
     return {
       ..._.omit(spec, ['name']),
       categories: _.get(current, 'categories.0', null)
     };
+  };
+
+  const handlSpecChange = (value: string) => {
+    const spec = _.find(specList, (item: any) => item.value === value);
+    form.current.setFieldsValue({
+      ...spec,
+      categories: _.get(current, 'categories.0', null),
+      name: _.toLower(current.name).replace(/\s/g, '-')
+    });
+
+    if (spec.backend === backendOptionsMap.vllm) {
+      setIsGGUF(false);
+    }
+
+    if (spec.backend === backendOptionsMap.llamaBox) {
+      setIsGGUF(true);
+    }
   };
 
   const initFormDataBySource = (data: CatalogSpec) => {
@@ -199,7 +416,6 @@ const AddModal: React.FC<AddModalProps> = (props) => {
   const handleSetBackendOptions = (source: string) => {
     const groupList = sourceGroupMap.current[source];
     const backendGroup = _.groupBy(groupList, 'backend');
-    console.log('backendGroup====', backendGroup, source);
 
     const backendList = _.filter(backendOptions, (item: any) => {
       return backendGroup[item.value];
@@ -233,33 +449,52 @@ const AddModal: React.FC<AddModalProps> = (props) => {
     if (backend === backendOptionsMap.llamaBox) {
       setIsGGUF(true);
     }
-    const sizeList = handleSetSizeOptions({
-      source: form.current.getFieldValue('source'),
-      backend: backend
-    });
-    const quantizaList = handleSetQuantizationOptions({
-      source: form.current.getFieldValue('source'),
-      size: _.get(sizeList, '0.value', 0),
+
+    const quantizaList = generateQuantizationOptions({
+      size: form.current.getFieldValue('size'),
       backend: backend
     });
 
     const data = getModelSpec({
       source: form.current.getFieldValue('source'),
       backend: backend,
-      size: _.get(sizeList, '0.value', 0),
+      size: form.current.getFieldValue('size'),
       quantization:
+        _.find(
+          quantizaList,
+          (item: any) =>
+            item.value === form.current.getFieldValue('quantization')
+        )?.value ||
         _.find(quantizaList, (item: { label: string; value: string }) =>
           getDefaultQuant({
             category: _.get(current, 'categories.0', ''),
             quantOption: item.value
           })
-        )?.value || _.get(quantizaList, '0.value', '')
+        )?.value ||
+        _.get(quantizaList, '0.value', '')
     });
+    console.log(
+      'getModelSpec====',
+      data,
+      quantizaList,
+      _.cloneDeep(quantizaList)
+    );
 
+    setFinalList({
+      sizeList: sizeOptionsRef.current,
+      quantizationList: quantizationOptionsRef.current,
+      backendList: backendOptionsRef.current,
+      size: data.size,
+      quantization: data.quantization,
+      backend: data.backend
+    });
     form.current.setFieldsValue({
       ...data
     });
   };
+  useEffect(() => {
+    console.log('backendDataList====', backendDataList);
+  }, [backendDataList]);
 
   const fetchSpecData = async () => {
     try {
@@ -273,37 +508,125 @@ const AddModal: React.FC<AddModalProps> = (props) => {
           token: axiosToken.current.token
         }
       );
-      const groupList = _.groupBy(res.items, 'source');
-      sourceGroupMap.current = groupList;
+      sizeOptionsRef.current = _.uniqBy(
+        _.map(res.items || [], (item: CatalogSpec) => {
+          return {
+            value: item.size,
+            label: `${item.size}B`,
+            key: item.size,
+            ..._.pick(item, [
+              'source',
+              'backend',
+              'size',
+              'quantization',
+              'compatibility',
+              'compatibility_message'
+            ])
+          };
+        }).filter((item: any) => item.value),
+        'value'
+      );
 
-      const sources = _.filter(sourceOptions, (item: any) => {
-        return groupList[item.value];
+      quantizationOptionsRef.current = _.map(
+        res.items || [],
+        (item: CatalogSpec) => {
+          return {
+            value: item.quantization,
+            label: item.quantization,
+            key: item.quantization,
+            ..._.pick(item, [
+              'source',
+              'backend',
+              'size',
+              'quantization',
+              'compatibility',
+              'compatibility_message'
+            ])
+          };
+        }
+      );
+
+      backendOptionsRef.current = _.map(
+        res.items || [],
+        (item: CatalogSpec) => {
+          return {
+            value: item.backend,
+            label: item.backend,
+            key: item.backend,
+            ..._.pick(item, [
+              'size',
+              'source',
+              'backend',
+              'quantization',
+              'compatibility',
+              'compatibility_message'
+            ])
+          };
+        }
+      );
+
+      modelSpecListRef.current = res.items || [];
+
+      const list = _.filter(
+        res.items,
+        (item: CatalogSpec) => item.compatibility
+      );
+
+      let defaultSpec = _.find(list, (item: CatalogSpec) => {
+        return getDefaultQuant({
+          category: _.get(current, 'categories.0', ''),
+          quantOption: item.quantization
+        });
       });
-      const source = _.get(sources, '0.value', '');
-      const defaultSpec =
-        _.find(groupList[source], (item: CatalogSpec) => {
+
+      if (!defaultSpec) {
+        defaultSpec = _.find(res.items, (item: CatalogSpec) => {
           return getDefaultQuant({
             category: _.get(current, 'categories.0', ''),
             quantOption: item.quantization
           });
-        }) || _.get(groupList, `${source}.0`, {});
+        });
+      }
 
-      setSourceList(sources);
-      handleSetBackendOptions(source);
-      handleSetSizeOptions({
-        source: source,
-        backend: defaultSpec.backend
-      });
-      handleSetQuantizationOptions({
-        source: source,
-        size: defaultSpec.size,
-        backend: defaultSpec.backend
-      });
+      if (!defaultSpec) {
+        defaultSpec = _.get(list, '0', {});
+      }
+
+      setSpecList(
+        _.map(res.items, (item: CatalogSpec) => {
+          return {
+            ...item,
+            sizeLable: `${item.size}B`,
+            value: `${item.size}_${item.quantization}_${item.backend}`,
+            label: `${item.size}B-${item.quantization}-${item.backend}`
+          };
+        })
+      );
+
       initFormDataBySource(defaultSpec);
       form.current.setFieldValue(
         'name',
         _.toLower(current.name).replace(/\s/g, '-') || ''
       );
+      console.log('setSizeOptions====', defaultSpec, sizeOptionsRef.current);
+      // setSizeOptions(sizeOptionsRef.current);
+      // generateBackendOptions({
+      //   size: defaultSpec.size,
+      //   quantization: defaultSpec.quantization
+      // });
+      // generateQuantizationOptions({
+      //   backend: defaultSpec.backend,
+      //   size: defaultSpec.size
+      // });
+
+      setFinalList({
+        sizeList: sizeOptionsRef.current,
+        quantizationList: quantizationOptionsRef.current,
+        backendList: backendOptionsRef.current,
+        size: defaultSpec.size,
+        quantization: defaultSpec.quantization,
+        backend: defaultSpec.backend
+      });
       if (defaultSpec.backend === backendOptionsMap.vllm) {
         setIsGGUF(false);
       }
@@ -316,39 +639,81 @@ const AddModal: React.FC<AddModalProps> = (props) => {
     }
   };
 
+  // quantization change
   const handleOnQuantizationChange = (val: string) => {
-    const data = getModelSpec({
-      source: form.current.getFieldValue('source'),
-      backend: form.current.getFieldValue('backend'),
+    const backendList = generateBackendOptions({
       size: form.current.getFieldValue('size'),
       quantization: val
+    });
+
+    const data = getModelSpec({
+      source: form.current.getFieldValue('source'),
+      backend:
+        _.find(
+          backendList,
+          (item: any) => item.value === form.current.getFieldValue('backend')
+        )?.value || _.get(backendList, '0.value', ''),
+      size: form.current.getFieldValue('size'),
+      quantization: val
+    });
+
+    setFinalList({
+      sizeList: sizeOptionsRef.current,
+      quantizationList: quantizationOptionsRef.current,
+      backendList: backendOptionsRef.current,
+      size: data.size,
+      quantization: data.quantization,
+      backend: data.backend
     });
     form.current.setFieldsValue({
       ...data
     });
   };
 
+  // size change
   const handleOnSizeChange = (val: number) => {
-    const list = handleSetQuantizationOptions({
-      source: form.current.getFieldValue('source'),
+    const backendList = generateBackendOptions({
+      size: val,
+      quantization: form.current.getFieldValue('quantization')
+    });
+
+    const quantList = generateQuantizationOptions({
       backend: form.current.getFieldValue('backend'),
       size: val
     });
 
     const data = getModelSpec({
       source: form.current.getFieldValue('source'),
-      backend: form.current.getFieldValue('backend'),
+      backend:
+        _.find(
+          backendList,
+          (item: any) => item.value === form.current.getFieldValue('backend')
+        )?.value || _.get(backendList, '0.value', ''),
       size: val,
       quantization:
-        _.find(list, (item: { label: string; value: string }) =>
+        _.find(
+          quantList,
+          (item: any) =>
+            item.value === form.current.getFieldValue('quantization')
+        )?.value ||
+        _.find(quantList, (item: { label: string; value: string }) =>
           getDefaultQuant({
             category: _.get(current, 'categories.0', ''),
             quantOption: item.value
           })
-        )?.value || _.get(list, '0.value', '')
+        )?.value ||
+        _.get(quantList, '0.value', '')
     });
 
     // set form data
+    setFinalList({
+      sizeList: sizeOptionsRef.current,
+      quantizationList: quantizationOptionsRef.current,
+      backendList: backendOptionsRef.current,
+      size: data.size,
+      quantization: data.quantization,
+      backend: data.backend
+    });
     form.current.setFieldsValue({
       ...data
     });
@@ -357,7 +722,8 @@ const AddModal: React.FC<AddModalProps> = (props) => {
   const handleOk = (values: FormData) => {
     onOk({
       ...values,
-      ...getModelFile(selectSpecRef.current)
+      ...getModelFile(selectSpecRef.current),
+      source: _.get(selectSpecRef.current, 'source', '')
     });
   };
 
@@ -369,6 +735,11 @@ const AddModal: React.FC<AddModalProps> = (props) => {
   useEffect(() => {
     if (open) {
       fetchSpecData();
+    } else {
+      setModelSpec(null as any);
+      setSizeDataList([]);
+      setQuantizationDataList([]);
+      setBackendDataList([]);
     }
     return () => {
       axiosToken.current?.cancel?.();
@@ -413,40 +784,56 @@ const AddModal: React.FC<AddModalProps> = (props) => {
       footer={false}
     >
       <div style={{ display: 'flex', height: '100%' }}>
-        <ColumnWrapper
+        <ScrollerWrapper
           footer={
-            <ModalFooter
-              onCancel={handleCancel}
-              onOk={handleSumit}
-              style={{
-                padding: '16px 24px',
-                display: 'flex',
-                justifyContent: 'flex-end'
-              }}
-            ></ModalFooter>
+            <div>
+              {modelSpec && !modelSpec.compatibility && (
+                <div style={{ paddingInline: 16, paddingTop: 16 }}>
+                  <AlertBlockInfo
+                    rows={3}
+                    style={{ textAlign: 'left' }}
+                    title="Compatibility Warning"
+                    message={modelSpec.compatibility_message || ''}
+                    type="warning"
+                  ></AlertBlockInfo>
+                </div>
+              )}
+              <ModalFooter
+                onCancel={handleCancel}
+                onOk={handleSumit}
+                style={{
+                  padding: '16px 24px',
+                  display: 'flex',
+                  justifyContent: 'flex-end'
+                }}
+              ></ModalFooter>
+            </div>
           }
         >
           <>
             <DataForm
+              fields={[]}
               source={source}
               action={action}
               selectedModel={{}}
               onOk={handleOk}
               ref={form}
               isGGUF={isGGUF}
+              specList={specList}
               byBuiltIn={true}
               sourceDisable={false}
-              backendOptions={backendList}
+              backendOptions={backendDataList}
               sourceList={sourceList}
-              quantizationOptions={quantizationOptions}
-              sizeOptions={sizeOptions}
+              quantizationOptions={quantizationDataList}
+              sizeOptions={sizeDataList}
+              onSpecChange={handlSpecChange}
               onBackendChange={handleBackendChange}
               onSourceChange={handleSourceChange}
               onQuantizationChange={handleOnQuantizationChange}
               onSizeChange={handleOnSizeChange}
             ></DataForm>
           </>
-        </ColumnWrapper>
+        </ScrollerWrapper>
       </div>
     </Drawer>
   );

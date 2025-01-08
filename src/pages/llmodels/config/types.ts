@@ -160,4 +160,6 @@ export interface CatalogSpec {
   backend_parameters: any[];
   quantization: string;
   size: number;
+  compatibility?: boolean;
+  compatibility_message?: string;
 }

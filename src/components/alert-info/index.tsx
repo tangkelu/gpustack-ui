@@ -9,6 +9,7 @@ interface AlertInfoProps {
   icon?: React.ReactNode;
   ellipsis?: boolean;
   style?: React.CSSProperties;
+  title?: React.ReactNode;
 }
 
 const AlertInfo: React.FC<AlertInfoProps> = (props) => {
@@ -36,7 +37,7 @@ const AlertInfo: React.FC<AlertInfoProps> = (props) => {
             ...style
           }}
         >
-          <WarningOutlined className="m-r-8" />
+          <WarningOutlined className="m-r-8 font-size-14" />
           {message}
         </Typography.Paragraph>
       ) : null}
