@@ -221,7 +221,6 @@ const Models: React.FC = () => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
         isPageHidden.current = false;
-        // await fetchModelsInstances();
         await Promise.all([
           createModelsChunkRequest(),
           createModelsInstanceChunkRequest()

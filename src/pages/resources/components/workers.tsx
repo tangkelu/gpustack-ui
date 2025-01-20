@@ -350,7 +350,8 @@ const Resources: React.FC = () => {
                         borderRadius: 12
                       }}
                     >
-                      {index}:{item}
+                      <span className="font-700">{index}</span>
+                      <span className="text-tertiary">:{item}</span>
                     </AutoTooltip>
                   );
                 })}
