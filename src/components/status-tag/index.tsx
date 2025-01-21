@@ -7,10 +7,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import SimpleBar from 'simplebar-react';
 import 'simplebar-react/dist/simplebar.min.css';
 import CopyButton from '../copy-button';
-import CopyStyle from './copy-btn.less';
+import CopyStyle from './copy.less';
 import './index.less';
 
-const linkReg = /<a (.*?)>(.*?)<\/a>/g;
 export const StatusMaps = {
   transitioning: 'blue',
   error: 'red',
@@ -29,7 +28,6 @@ type StatusTagProps = {
   download?: {
     percent: number;
   };
-  extra?: React.ReactNode;
   actions?: {
     label: string;
     icon?: React.ReactNode;
@@ -42,7 +40,6 @@ type StatusTagProps = {
 const StatusTag: React.FC<StatusTagProps> = ({
   statusValue,
   download,
-  extra,
   actions = [],
   type = 'tag'
 }) => {
@@ -59,18 +56,6 @@ const StatusTag: React.FC<StatusTagProps> = ({
   useEffect(() => {
     setStatusColor(StatusColorMap[status]);
   }, [status]);
-
-  const statusMessage = useMemo(() => {
-    return statusValue.message?.replace(linkReg, '');
-  }, [statusValue.message]);
-
-  const messageLink = useMemo(() => {
-    const link = statusValue.message?.match(linkReg);
-    if (link) {
-      return link?.[0].replace(linkReg, '<a $1 target="_blank">$2</a>');
-    }
-    return null;
-  }, [statusValue.message]);
 
   const renderContent = () => {
     const percent = download?.percent || 0;
@@ -91,8 +76,9 @@ const StatusTag: React.FC<StatusTagProps> = ({
         <div className="copy-button-wrapper">
           <CopyButton
             style={{ color: 'rgba(255,255,255,.8)' }}
-            text={statusMessage || ''}
+            text={statusValue.message || ''}
             size="small"
+            placement="right"
           ></CopyButton>
           {actions?.map((item) => {
             return (
@@ -118,7 +104,7 @@ const StatusTag: React.FC<StatusTagProps> = ({
           })}
         </div>
 
-        <SimpleBar style={{ maxHeight: 200 }} autoHide={false}>
+        <SimpleBar style={{ maxHeight: 200 }}>
           <div
             style={{
               width: 'max-content',
@@ -128,12 +114,7 @@ const StatusTag: React.FC<StatusTagProps> = ({
               wordBreak: 'break-word'
             }}
           >
-            {statusMessage}
-            {statusMessage && <span className="m-r-5"></span>}
-            {extra}
-            {messageLink && (
-              <span dangerouslySetInnerHTML={{ __html: messageLink }}></span>
-            )}
+            {statusValue.message}
           </div>
         </SimpleBar>
       </div>

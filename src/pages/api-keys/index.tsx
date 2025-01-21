@@ -22,6 +22,7 @@ import { ListItem } from './config/types';
 const { Column } = Table;
 
 const APIKeys: React.FC = () => {
+  console.log('APIKeys========');
   const rowSelection = useTableRowSelection();
   const { sortOrder, setSortOrder } = useTableSort({
     defaultSortOrder: 'descend'
@@ -46,6 +47,7 @@ const APIKeys: React.FC = () => {
   });
 
   const handlePageChange = (page: number, pageSize: number) => {
+    console.log('handlePageChange====', page, pageSize);
     setQueryParams({
       ...queryParams,
       page: page,
@@ -54,6 +56,7 @@ const APIKeys: React.FC = () => {
   };
 
   const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+    console.log('handleTableChange=======', pagination, filters, sorter);
     setSortOrder(sorter.order);
   };
 
@@ -89,7 +92,6 @@ const APIKeys: React.FC = () => {
   const handleNameChange = (e: any) => {
     setQueryParams({
       ...queryParams,
-      page: 1,
       search: e.target.value
     });
   };

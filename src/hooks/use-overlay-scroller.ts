@@ -23,12 +23,7 @@ export const overlaySollerOptions: UseOverlayScrollbarsParams = {
   defer: true
 };
 
-export default function useOverlayScroller(data?: {
-  options?: any;
-  events?: any;
-  defer?: boolean;
-}) {
-  const { options, events, defer = true } = data || {};
+export default function useOverlayScroller(options?: any) {
   const scrollEventElement = React.useRef<any>(null);
   const instanceRef = React.useRef<any>(null);
   const initialized = React.useRef(false);
@@ -47,10 +42,7 @@ export default function useOverlayScroller(data?: {
         clickScroll: 'instant'
       }
     },
-    events: {
-      ...events
-    },
-    defer: defer
+    defer: true
   });
 
   instanceRef.current = instance?.();
@@ -106,7 +98,7 @@ export default function useOverlayScroller(data?: {
   const createInstance = React.useCallback(
     (el: any) => {
       if (instanceRef.current) {
-        return instanceRef.current;
+        return;
       }
       if (el) {
         initialize(el);
@@ -115,7 +107,6 @@ export default function useOverlayScroller(data?: {
         scrollEventElement.current =
           instanceRef.current?.elements()?.scrollEventElement;
       }
-      return instanceRef.current;
     },
     [initialize, instance]
   );

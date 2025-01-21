@@ -2,7 +2,6 @@ import IconFont from '@/components/icon-font';
 import SealAutoComplete from '@/components/seal-form/auto-complete';
 import SealInput from '@/components/seal-form/seal-input';
 import SealSelect from '@/components/seal-form/seal-select';
-import TooltipList from '@/components/tooltip-list';
 import { PageAction } from '@/config';
 import { PageActionType } from '@/config/types';
 import { useIntl } from '@umijs/max';
@@ -24,8 +23,7 @@ import {
   backendOptionsMap,
   modelSourceMap,
   modelTaskMap,
-  ollamaModelOptions,
-  sourceOptions
+  ollamaModelOptions
 } from '../config';
 import { HuggingFaceModels, ModelScopeModels } from '../config/audio-catalog';
 import { FormData, GPUListItem } from '../config/types';
@@ -37,18 +35,8 @@ interface DataFormProps {
   action: PageActionType;
   selectedModel: any;
   isGGUF: boolean;
-  sizeOptions?: Global.BaseOption<number>[];
-  quantizationOptions?: Global.BaseOption<string>[];
-  sourceDisable?: boolean;
-  byBuiltIn?: boolean;
-  backendOptions?: Global.BaseOption<string>[];
-  sourceList?: Global.BaseOption<string>[];
-  onSizeChange?: (val: number) => void;
-  onQuantizationChange?: (val: string) => void;
-  onSourceChange?: (value: string) => void;
   onOk: (values: FormData) => void;
   onBackendChange?: (value: string) => void;
-  fields?: string[];
 }
 
 const SEARCH_SOURCE = [
@@ -56,20 +44,32 @@ const SEARCH_SOURCE = [
   modelSourceMap.modelscope_value
 ];
 
+const sourceOptions = [
+  {
+    label: 'Hugging Face',
+    value: modelSourceMap.huggingface_value,
+    key: 'huggingface'
+  },
+  {
+    label: 'Ollama Library',
+    value: modelSourceMap.ollama_library_value,
+    key: 'ollama_library'
+  },
+  {
+    label: 'ModelScope',
+    value: modelSourceMap.modelscope_value,
+    key: 'model_scope'
+  },
+  {
+    label: 'models.form.localPath',
+    locale: true,
+    value: modelSourceMap.local_path_value,
+    key: 'local_path'
+  }
+];
+
 const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
-  const {
-    action,
-    isGGUF,
-    sourceDisable = true,
-    backendOptions,
-    sourceList,
-    byBuiltIn,
-    sizeOptions = [],
-    quantizationOptions = [],
-    fields = ['source'],
-    onSourceChange,
-    onOk
-  } = props;
+  const { action, isGGUF, onOk } = props;
   const [form] = Form.useForm();
   const intl = useIntl();
   const [gpuOptions, setGpuOptions] = useState<
@@ -84,43 +84,14 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
 
   const localPathCache = useRef<string>('');
 
-  const backendTipsList = [
-    {
-      title: 'llama-box',
-      tips: intl.formatMessage({ id: 'models.form.backend.llamabox' })
-    },
-    {
-      title: 'vLLM',
-      tips: intl.formatMessage({ id: 'models.form.backend.vllm' })
-    },
-    {
-      title: 'vox-box',
-      tips: intl.formatMessage({ id: 'models.form.backend.voxbox' })
-    }
-  ];
-
-  const localPathTipsList = [
-    {
-      title: intl.formatMessage({ id: 'models.localpath.gguf.tips.title' }),
-      tips: intl.formatMessage({ id: 'models.localpath.gguf.tips' })
-    },
-    {
-      title: intl.formatMessage({ id: 'models.localpat.safe.tips.title' }),
-      tips: intl.formatMessage({ id: 'models.localpath.safe.tips' })
-    },
-    {
-      title: intl.formatMessage({ id: 'models.localpath.shared.tips.title' }),
-      tips: intl.formatMessage({ id: 'models.localpath.chunks.tips' })
-    }
-  ];
-
   const getGPUList = async () => {
     const data = await queryGPUList();
     const list = _.map(data.items, (item: GPUListItem) => {
       return {
         ...item,
         title: '',
-        label: ` ${item.name}(${item.worker_name}) [${intl.formatMessage({ id: 'resources.table.index' })}:${item.index}]`,
+        label: ` ${item.name}(${item.worker_name})[
+            ${intl.formatMessage({ id: 'resources.table.index' })}:${item.index}]`,
         value: item.id
       };
     });
@@ -288,6 +259,34 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
     );
   };
 
+  const renderS3Fields = () => {
+    return (
+      <>
+        <Form.Item<FormData>
+          name="s3_address"
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage(
+                {
+                  id: 'common.form.rule.input'
+                },
+                { name: intl.formatMessage({ id: 'models.form.s3address' }) }
+              )
+            }
+          ]}
+        >
+          <SealInput.Input
+            label={intl.formatMessage({
+              id: 'models.form.s3address'
+            })}
+            required
+          ></SealInput.Input>
+        </Form.Item>
+      </>
+    );
+  };
+
   const renderOllamaModelFields = () => {
     return (
       <>
@@ -355,95 +354,17 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
           ]}
         >
           <SealInput.Input
-            required
             onBlur={handleLocalPathBlur}
             onFocus={handleOnFocus}
             label={intl.formatMessage({ id: 'models.form.filePath' })}
-            description={<TooltipList list={localPathTipsList}></TooltipList>}
+            required
           ></SealInput.Input>
         </Form.Item>
       </>
     );
   };
 
-  const handleSizeChange = (val: any) => {
-    props.onSizeChange?.(val);
-  };
-
-  const handleOnQuantizationChange = (val: any) => {
-    props.onQuantizationChange?.(val);
-  };
-
-  // from catalog
-  const renderFieldsFromCatalog = useMemo(() => {
-    if (!byBuiltIn && !sizeOptions?.length && !quantizationOptions?.length) {
-      return null;
-    }
-    return (
-      <>
-        {sizeOptions?.length > 0 && (
-          <Form.Item<FormData>
-            name="size"
-            key="size"
-            rules={[
-              {
-                required: true,
-                message: intl.formatMessage(
-                  {
-                    id: 'common.form.rule.select'
-                  },
-                  { name: 'size' }
-                )
-              }
-            ]}
-          >
-            <SealSelect
-              filterOption
-              onChange={handleSizeChange}
-              defaultActiveFirstOption
-              disabled={false}
-              options={sizeOptions}
-              label="Size"
-              required
-            ></SealSelect>
-          </Form.Item>
-        )}
-        {quantizationOptions?.length > 0 && (
-          <Form.Item<FormData>
-            name="quantization"
-            key="quantization"
-            rules={[
-              {
-                required: true,
-                message: intl.formatMessage(
-                  {
-                    id: 'common.form.rule.select'
-                  },
-                  { name: 'quantization' }
-                )
-              }
-            ]}
-          >
-            <SealSelect
-              filterOption
-              defaultActiveFirstOption
-              disabled={false}
-              options={quantizationOptions}
-              onChange={handleOnQuantizationChange}
-              label="Quantization"
-              required
-            ></SealSelect>
-          </Form.Item>
-        )}
-      </>
-    );
-  }, [sizeOptions, quantizationOptions, byBuiltIn]);
-
   const renderFieldsBySource = useMemo(() => {
-    // from catalog
-    if (byBuiltIn) {
-      return null;
-    }
     if (SEARCH_SOURCE.includes(props.source)) {
       return renderHuggingfaceFields();
     }
@@ -452,12 +373,15 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
       return renderOllamaModelFields();
     }
 
+    if (props.source === modelSourceMap.s3_value) {
+      return renderS3Fields();
+    }
     if (props.source === modelSourceMap.local_path_value) {
       return renderLocalPathFields();
     }
 
     return null;
-  }, [props.source, isGGUF, byBuiltIn, intl]);
+  }, [props.source, isGGUF, intl]);
 
   const handleBackendChange = useCallback((val: string) => {
     if (val === backendOptionsMap.llamaBox) {
@@ -467,7 +391,6 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
       });
     }
     form.setFieldValue('backend_version', '');
-    props.onBackendChange?.(val);
   }, []);
 
   const handleOk = (formdata: FormData) => {
@@ -480,10 +403,6 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
     onOk({
       ..._.omit(data, ['scheduleType'])
     });
-  };
-
-  const handleOnSourceChange = (val: string) => {
-    onSourceChange?.(val);
   };
 
   useEffect(() => {
@@ -541,7 +460,7 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
           required
         ></SealInput.Input>
       </Form.Item>
-      {fields.includes('source') && (
+      {
         <Form.Item<FormData>
           name="source"
           rules={[
@@ -558,57 +477,18 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
         >
           {
             <SealSelect
-              onChange={handleOnSourceChange}
-              disabled={sourceDisable}
+              disabled={true}
               label={intl.formatMessage({
                 id: 'models.form.source'
               })}
-              options={sourceList ?? sourceOptions}
+              options={sourceOptions}
               required
             ></SealSelect>
           }
         </Form.Item>
-      )}
+      }
 
       {renderFieldsBySource}
-      <Form.Item name="backend" rules={[{ required: true }]}>
-        <SealSelect
-          required
-          onChange={handleBackendChange}
-          label={intl.formatMessage({ id: 'models.form.backend' })}
-          description={<TooltipList list={backendTipsList}></TooltipList>}
-          options={
-            backendOptions ?? [
-              {
-                label: `llama-box`,
-                value: backendOptionsMap.llamaBox,
-                disabled:
-                  props.source === modelSourceMap.local_path_value
-                    ? false
-                    : !isGGUF
-              },
-              {
-                label: 'vLLM',
-                value: backendOptionsMap.vllm,
-                disabled:
-                  props.source === modelSourceMap.local_path_value
-                    ? false
-                    : isGGUF
-              },
-              {
-                label: 'vox-box',
-                value: backendOptionsMap.voxBox,
-                disabled: props.source === modelSourceMap.ollama_library_value
-              }
-            ]
-          }
-          disabled={
-            action === PageAction.EDIT &&
-            props.source !== modelSourceMap.local_path_value
-          }
-        ></SealSelect>
-      </Form.Item>
-      {renderFieldsFromCatalog}
       <Form.Item<FormData>
         name="replicas"
         rules={[
@@ -633,6 +513,52 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
           required
           min={0}
         ></SealInput.Number>
+      </Form.Item>
+      <Form.Item name="backend">
+        <SealSelect
+          onChange={handleBackendChange}
+          label={intl.formatMessage({ id: 'models.form.backend' })}
+          description={
+            <div>
+              <div>
+                1. {intl.formatMessage({ id: 'models.form.backend.llamabox' })}
+              </div>
+              <div>
+                2. {intl.formatMessage({ id: 'models.form.backend.vllm' })}
+              </div>
+              <div>
+                3. {intl.formatMessage({ id: 'models.form.backend.voxbox' })}
+              </div>
+            </div>
+          }
+          options={[
+            {
+              label: `llama-box`,
+              value: backendOptionsMap.llamaBox,
+              disabled:
+                props.source === modelSourceMap.local_path_value
+                  ? false
+                  : !isGGUF
+            },
+            {
+              label: 'vLLM',
+              value: backendOptionsMap.vllm,
+              disabled:
+                props.source === modelSourceMap.local_path_value
+                  ? false
+                  : isGGUF
+            },
+            {
+              label: 'vox-box',
+              value: backendOptionsMap.voxBox,
+              disabled: props.source === modelSourceMap.ollama_library_value
+            }
+          ]}
+          disabled={
+            action === PageAction.EDIT &&
+            props.source !== modelSourceMap.local_path_value
+          }
+        ></SealSelect>
       </Form.Item>
       <Form.Item<FormData> name="description">
         <SealInput.TextArea

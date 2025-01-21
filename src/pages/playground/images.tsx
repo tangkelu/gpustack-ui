@@ -2,7 +2,6 @@ import IconFont from '@/components/icon-font';
 import breakpoints from '@/config/breakpoints';
 import HotKeys from '@/config/hotkeys';
 import useWindowResize from '@/hooks/use-window-resize';
-import { modelCategoriesMap } from '@/pages/llmodels/config';
 import { DiffOutlined, HighlightOutlined } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
@@ -32,12 +31,12 @@ const TextToImages: React.FC = () => {
 
   const optionsList = [
     {
-      label: intl.formatMessage({ id: 'playground.image.generate' }),
+      label: 'Generate',
       value: TabsValueMap.Tab1,
       icon: <DiffOutlined />
     },
     {
-      label: intl.formatMessage({ id: 'playground.image.edit' }),
+      label: 'Edit',
       value: TabsValueMap.Tab2,
       icon: <HighlightOutlined />
     }
@@ -86,7 +85,7 @@ const TextToImages: React.FC = () => {
     const getModelList = async () => {
       try {
         const params = {
-          categories: modelCategoriesMap.image,
+          categories: 'image',
           with_meta: true
         };
         const res = await queryModelsList(params);

@@ -1,6 +1,4 @@
-import { throttle } from 'lodash';
 import qs from 'query-string';
-
 const extractStreamRegx = /data:\s*({.*?})(?=\n|$)/g;
 
 const extractJSON = (dataStr: string) => {
@@ -22,21 +20,6 @@ const extractJSON = (dataStr: string) => {
   }
 
   return results;
-};
-
-const errorHandler = async (res: any) => {
-  try {
-    const data = await res.json();
-    return {
-      error: true,
-      data: data
-    };
-  } catch (error) {
-    return {
-      error: true,
-      message: res.statusText
-    };
-  }
 };
 
 /**
@@ -66,11 +49,11 @@ export const fetchChunkedData = async (params: {
       ...params.headers
     }
   });
-
+  console.log('response====', response);
   if (!response.ok) {
     return {
       error: true,
-      data: await errorHandler(response)
+      data: await response.json()
     };
   }
   const reader = response?.body?.getReader();
@@ -91,8 +74,8 @@ const createFormData = (data: any): FormData => {
       formData.append(key, value);
     } else if (typeof value === 'object' && value !== null) {
       formData.append(key, JSON.stringify(value));
-    } else if (value !== undefined && value !== null) {
-      formData.append(key, value);
+    } else {
+      formData.append(key, String(value));
     }
   };
 
@@ -122,7 +105,7 @@ export const fetchChunkedDataPostFormData = async (params: {
   if (!response.ok) {
     return {
       error: true,
-      data: await errorHandler(response)
+      data: await response.json()
     };
   }
   const reader = response?.body?.getReader();
@@ -136,93 +119,45 @@ export const fetchChunkedDataPostFormData = async (params: {
 };
 
 export const readStreamData = async (
-  reader: ReadableStreamDefaultReader<Uint8Array>,
+  reader: any,
   decoder: TextDecoder,
-  callback: (data: any[]) => void,
-  throttleDelay = 200
+  callback: (data: any) => void
 ) => {
-  class BufferManager {
-    private buffer: any[] = [];
-
-    public add(data: any) {
-      this.buffer.push(data);
-    }
-
-    public flush() {
-      if (this.buffer.length > 0) {
-        const currentBuffer = [...this.buffer];
-        this.buffer = [];
-        currentBuffer.forEach((item) => callback(item));
-      }
-    }
-
-    public getBuffer() {
-      return this.buffer;
-    }
+  const { done, value } = await reader.read();
+  if (done) {
+    return;
   }
 
-  const bufferManager = new BufferManager();
+  let chunk = decoder.decode(value, { stream: true });
 
-  const throttledCallback = throttle(() => {
-    bufferManager.flush();
-  }, throttleDelay);
-
-  let isReading = true;
-
-  while (isReading) {
-    const { done, value } = await reader.read();
-
-    if (done) {
-      isReading = false;
-      bufferManager.flush();
-      break;
-    }
-
-    try {
-      const chunk = decoder.decode(value, { stream: true });
-
-      if (chunk.startsWith('error:')) {
-        const errorStr = chunk.slice(7).trim();
-        const jsonData = JSON.parse(errorStr);
-        bufferManager.add({ error: jsonData });
-      } else {
-        extractJSON(chunk).forEach((data) => {
-          bufferManager.add(data);
-        });
-      }
-
-      throttledCallback();
-    } catch (error) {
-      bufferManager.add({ error });
-    }
+  if (chunk.startsWith('error:')) {
+    const errorStr = chunk.slice(7).trim();
+    const jsonData = JSON.parse(errorStr);
+    callback({ error: jsonData });
+  } else {
+    extractJSON(chunk).forEach((data) => {
+      callback?.(data);
+    });
   }
+
+  await readStreamData(reader, decoder, callback);
 };
 
 // Process the remainder of the buffer
-const processBuffer = async (buffer: string, callback: (data: any) => void) => {
-  if (!buffer) return;
-
+const processBuffer = (buffer: string, callback: (data: any) => void) => {
   const lines = buffer.split('\n');
   for (const line of lines) {
-    const trimmedLine = line.trim();
-
-    if (trimmedLine.startsWith('data: ')) {
-      const jsonStr = trimmedLine.slice(6).trim();
+    if (line.startsWith('data: ')) {
+      const jsonStr = line.slice(6).trim();
       try {
-        if (jsonStr !== '[DONE]') {
-          const jsonData = JSON.parse(jsonStr);
-          callback(jsonData);
-        }
+        const jsonData = JSON.parse(jsonStr);
+        callback(jsonData);
       } catch (e) {
-        console.error('Failed to parse JSON from line:', jsonStr, e);
-      }
-    } else if (trimmedLine.startsWith('error:')) {
-      const errorStr = trimmedLine.slice(7).trim();
-      try {
-        const jsonData = JSON.parse(errorStr);
-        callback({ error: jsonData });
-      } catch (e) {
-        console.error('Failed to parse error JSON from line:', errorStr, e);
+        console.error(
+          'Failed to parse JSON from remaining buffer:',
+          jsonStr,
+          e
+        );
       }
     }
   }
@@ -231,91 +166,47 @@ const processBuffer = async (buffer: string, callback: (data: any) => void) => {
 export const readLargeStreamData = async (
   reader: any,
   decoder: TextDecoder,
-  callback: (data: any) => void,
-  throttleDelay = 200
+  callback: (data: any) => void
 ) => {
   let buffer = ''; // cache incomplete line
-
-  class BufferManager {
-    private buffer: any[] = [];
-    private failed: boolean = false;
-    private isFlushing: boolean = false;
-    private callback: (data: any) => void;
-
-    constructor(callback: (data: any) => void) {
-      this.callback = callback;
-    }
-
-    public add(data: any) {
-      this.buffer.push(data);
-    }
-
-    public async flush() {
-      if (this.buffer.length === 0 || this.isFlushing) {
-        return;
-      }
-      this.failed = false;
-      this.isFlushing = true;
-
-      while (this.buffer.length > 0) {
-        const data = this.buffer.shift();
-
-        try {
-          processBuffer(data, this.callback);
-        } catch (error) {
-          console.error('Error processing buffer:', error);
-          this.failed = true;
-          this.buffer.unshift(data);
-          break;
-        }
-      }
-      this.isFlushing = false;
-    }
-
-    public getBuffer() {
-      return this.buffer;
-    }
-  }
-
-  const bufferManager = new BufferManager(callback);
-
-  const throttledCallback = throttle(async () => {
-    bufferManager.flush();
-  }, throttleDelay);
-
-  let isReading = true;
 
   while (true) {
     const { done, value } = await reader?.read?.();
 
     if (done) {
-      isReading = false;
       // Process remaining buffered data
-      if (buffer) {
-        bufferManager.add(buffer);
+      if (buffer.trim()) {
+        processBuffer(buffer, callback);
       }
-      bufferManager.flush();
       break;
     }
 
-    try {
-      // Decode new chunk of data and append to buffer
-      buffer += decoder.decode(value, { stream: true });
+    // Decode new chunk of data and append to buffer
+    buffer += decoder.decode(value, { stream: true });
 
-      // Try to process the complete line in the buffer
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // Keep last line (may be incomplete)
+    // Try to process the complete line in the buffer
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || ''; // Keep last line (may be incomplete)
 
-      console.log('buffer>>>>>>>>>>>>>:', buffer);
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const jsonStr = line.slice(6).trim();
 
-      for (const line of lines) {
-        bufferManager.add(line);
+        try {
+          if (jsonStr !== '[DONE]') {
+            const jsonData = JSON.parse(jsonStr);
+            callback(jsonData);
+          }
+        } catch (e) {
+          console.error('Failed to parse JSON:', jsonStr, e);
+        }
       }
 
-      throttledCallback();
-    } catch (error) {
-      console.log('Error reading stream data:', error);
-      // do nothing
+      if (line.startsWith('error:')) {
+        const errorStr = line.slice(7).trim();
+        const jsonData = JSON.parse(errorStr);
+        callback({ error: jsonData });
+      }
     }
   }
 };

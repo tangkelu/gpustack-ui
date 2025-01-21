@@ -7,7 +7,6 @@ import {
   ListItem as WokerListItem
 } from '@/pages/resources/config/types';
 import _ from 'lodash';
-import qs from 'query-string';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { MODELS_API, MODEL_INSTANCE_API, queryModelsList } from './apis';
 import TableList from './components/table-list';
@@ -20,40 +19,34 @@ const Models: React.FC = () => {
   const [modelInstances, setModelInstances] = useState<any[]>([]);
   const [dataSource, setDataSource] = useState<{
     dataList: ListItem[];
-    deletedIds: number[];
     loading: boolean;
     total: number;
   }>({
     dataList: [],
-    deletedIds: [],
     loading: false,
     total: 0
   });
-
   const [gpuDeviceList, setGpuDeviceList] = useState<GPUDeviceItem[]>([]);
   const [workerList, setWorkerList] = useState<WokerListItem[]>([]);
+  const [firstLoad, setFirstLoad] = useState(true);
   const chunkRequedtRef = useRef<any>();
   const chunkInstanceRequedtRef = useRef<any>();
   const isPageHidden = useRef(false);
-  const instancesToken = useRef<any>();
   let axiosToken = createAxiosToken();
   const [queryParams, setQueryParams] = useState({
     page: 1,
     perPage: 10,
-    search: '',
-    categories: []
+    search: ''
   });
 
   const { updateChunkedList, cacheDataListRef } = useUpdateChunkedList({
-    events: ['UPDATE'],
     dataList: dataSource.dataList,
-    setDataList(list, opts?: any) {
+    setDataList(list) {
       setDataSource((pre) => {
         return {
           total: pre.total,
           loading: false,
-          dataList: list,
-          deletedIds: opts?.deletedIds || []
+          dataList: list
         };
       });
     }
@@ -86,20 +79,21 @@ const Models: React.FC = () => {
       setDataSource({
         dataList: res.items || [],
         loading: false,
-        total: res.pagination.total,
-        deletedIds: []
+        total: res.pagination.total
       });
     } catch (error) {
       if (!isPageHidden.current) {
         setDataSource({
           dataList: [],
           loading: false,
-          total: dataSource.total,
-          deletedIds: []
+          total: dataSource.total
         });
       }
+      console.log('error+++', error);
+    } finally {
+      setFirstLoad(false);
     }
-  }, [queryParams]);
+  }, [queryParams, firstLoad]);
 
   const handlePageChange = useCallback(
     (page: number, pageSize: number | undefined) => {
@@ -125,19 +119,17 @@ const Models: React.FC = () => {
   const createModelsChunkRequest = useCallback(async () => {
     chunkRequedtRef.current?.current?.cancel?.();
     try {
-      const query = {
-        search: queryParams.search,
-        categories: queryParams.categories
-      };
       chunkRequedtRef.current = setChunkRequest({
-        url: `${MODELS_API}?${qs.stringify(_.pickBy(query, (val: any) => !!val))}`,
+        url: `${MODELS_API}`,
+        params: {
+          ..._.pickBy(queryParams, (val: any) => !!val)
+        },
         handler: updateHandler
       });
     } catch (error) {
       // ignore
     }
-  }, [queryParams.categories, queryParams.search]);
-
+  }, [queryParams]);
   const createModelsInstanceChunkRequest = useCallback(async () => {
     chunkInstanceRequedtRef.current?.current?.cancel?.();
     try {
@@ -150,6 +142,23 @@ const Models: React.FC = () => {
       // ignore
     }
   }, []);
+
+  const handleSearch = useCallback(
+    (e: any) => {
+      fetchData();
+    },
+    [fetchData]
+  );
+
+  const handleNameChange = useCallback(
+    (e: any) => {
+      setQueryParams({
+        ...queryParams,
+        search: e.target.value
+      });
+    },
+    [queryParams]
+  );
 
   const handleOnViewLogs = useCallback(() => {
     isPageHidden.current = true;
@@ -169,31 +178,6 @@ const Models: React.FC = () => {
     }, 100);
   }, [fetchData, createModelsChunkRequest, createModelsInstanceChunkRequest]);
 
-  const handleSearch = useCallback(async () => {
-    await fetchData();
-  }, [fetchData]);
-
-  const debounceUpdateFilter = _.debounce((e: any) => {
-    setQueryParams({
-      ...queryParams,
-      page: 1,
-      search: e.target.value
-    });
-  }, 350);
-
-  const handleNameChange = useCallback(debounceUpdateFilter, [queryParams]);
-
-  const handleCategoryChange = useCallback(
-    (value: any) => {
-      setQueryParams({
-        ...queryParams,
-        page: 1,
-        categories: value
-      });
-    },
-    [queryParams]
-  );
-
   useEffect(() => {
     fetchData();
     return () => {
@@ -202,26 +186,28 @@ const Models: React.FC = () => {
   }, [queryParams]);
 
   useEffect(() => {
-    createModelsChunkRequest();
-  }, [createModelsChunkRequest]);
-
-  useEffect(() => {
     getWorkerList();
-    createModelsInstanceChunkRequest();
 
     return () => {
       chunkRequedtRef.current?.current?.cancel?.();
       cacheDataListRef.current = [];
       chunkInstanceRequedtRef.current?.current?.cancel?.();
-      instancesToken.current?.cancel?.();
     };
   }, []);
+
+  useEffect(() => {
+    if (!firstLoad) {
+      setTimeout(() => {
+        createModelsChunkRequest();
+        createModelsInstanceChunkRequest();
+      }, 100);
+    }
+  }, [firstLoad]);
 
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
         isPageHidden.current = false;
-        // await fetchModelsInstances();
         await Promise.all([
           createModelsChunkRequest(),
           createModelsInstanceChunkRequest()
@@ -251,7 +237,6 @@ const Models: React.FC = () => {
       <TableList
         dataSource={dataSource.dataList}
         handleNameChange={handleNameChange}
-        handleCategoryChange={handleCategoryChange}
         handleSearch={handleSearch}
         handlePageChange={handlePageChange}
         handleDeleteSuccess={fetchData}
@@ -260,7 +245,6 @@ const Models: React.FC = () => {
         queryParams={queryParams}
         loading={dataSource.loading}
         total={dataSource.total}
-        deleteIds={dataSource.deletedIds}
         gpuDeviceList={gpuDeviceList}
         workerList={workerList}
       ></TableList>

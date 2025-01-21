@@ -1,6 +1,5 @@
 import {
   DownloadOutlined,
-  ExpandOutlined,
   FormatPainterOutlined,
   SyncOutlined,
   UndoOutlined
@@ -12,15 +11,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import IconFont from '../icon-font';
 import './index.less';
 
-type Point = { x: number; y: number; lineWidth: number };
+type Point = { x: number; y: number };
 type Stroke = Point[];
 
 type CanvasImageEditorProps = {
   imageSrc: string;
   disabled?: boolean;
-  imguid: string | number;
-  onSave: (imageData: { mask: string | null; img: string }) => void;
-  onScaleImageSize?: (data: { width: number; height: number }) => void;
+  onSave: (imageData: { mask: string; img: string }) => void;
   uploadButton: React.ReactNode;
   imageStatus: {
     isOriginal: boolean;
@@ -35,102 +32,52 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
   disabled,
   imageStatus,
   onSave,
-  onScaleImageSize,
-  imguid,
   uploadButton
 }) => {
-  const MIN_SCALE = 0.5;
-  const MAX_SCALE = 8;
-  const ZOOM_SPEED = 0.1;
   const intl = useIntl();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [lineWidth, setLineWidth] = useState<number>(60);
+  const [lineWidth, setLineWidth] = useState<number>(30);
   const isDrawing = useRef<boolean>(false);
   const currentStroke = useRef<Point[]>([]);
   const resizeObserver = useRef<ResizeObserver | null>(null);
   const strokesRef = useRef<Stroke[]>([]);
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const autoScale = useRef<number>(1);
-  const baseScale = useRef<number>(1);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const translatePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const contentPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const animationFrameIdRef = useRef<number | null>(null);
-  const strokeCache = useRef<any>({});
-  const preImguid = useRef<string | number>('');
-  const [activeScale, setActiveScale] = useState<number>(1);
-  const negativeMaskRef = useRef<boolean>(false);
 
-  const getTransformedPoint = useCallback(
-    (offsetX: number, offsetY: number) => {
-      const { current: scale } = autoScale;
+  const getTransformedPoint = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const overlayCanvas = overlayCanvasRef.current!;
+    const rect = overlayCanvas.getBoundingClientRect();
 
-      const { x: translateX, y: translateY } = translatePos.current;
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
 
-      const transformedX = (offsetX - translateX) / scale;
-      const transformedY = (offsetY - translateY) / scale;
+    const transformedX = x - overlayCanvas.width / 2;
+    const transformedY = y - overlayCanvas.height / 2;
 
-      return {
-        x: transformedX,
-        y: transformedY
-      };
-    },
-    []
-  );
+    console.log('Mouse Coordinates (Transformed):', transformedX, transformedY);
 
-  const getTransformLineWidth = useCallback((lineWidth: number) => {
-    return lineWidth / autoScale.current;
-  }, []);
-
-  const setCanvasTransformOrigin = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (autoScale.current <= MIN_SCALE) {
-      return;
-    }
-
-    if (autoScale.current >= MAX_SCALE) {
-      return;
-    }
-
-    console.log('Setting transform origin:', autoScale.current);
-    const rect = overlayCanvasRef.current!.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const originX = mouseX / rect.width;
-    const originY = mouseY / rect.height;
-
-    overlayCanvasRef.current!.style.transformOrigin = `${originX * 100}% ${originY * 100}%`;
-    canvasRef.current!.style.transformOrigin = `${originX * 100}% ${originY * 100}%`;
+    return { x: transformedX, y: transformedY };
   };
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (disabled) {
-      overlayCanvasRef.current!.style.cursor = 'default';
-      return;
-    }
     overlayCanvasRef.current!.style.cursor = 'none';
     cursorRef.current!.style.display = 'block';
-    cursorRef.current!.style.top = `${e.clientY - (lineWidth / 2) * autoScale.current}px`;
-    cursorRef.current!.style.left = `${e.clientX - (lineWidth / 2) * autoScale.current}px`;
+    cursorRef.current!.style.top = `${e.clientY - lineWidth / 2}px`;
+    cursorRef.current!.style.left = `${e.clientX - lineWidth / 2}px`;
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (disabled) {
-      return;
-    }
     overlayCanvasRef.current!.style.cursor = 'none';
     cursorRef.current!.style.display = 'block';
-    cursorRef.current!.style.top = `${e.clientY - (lineWidth / 2) * autoScale.current}px`;
-    cursorRef.current!.style.left = `${e.clientX - (lineWidth / 2) * autoScale.current}px`;
+    cursorRef.current!.style.top = `${e.clientY - lineWidth / 2}px`;
+    cursorRef.current!.style.left = `${e.clientX - lineWidth / 2}px`;
   };
 
   const handleMouseLeave = () => {
-    if (disabled) {
-      return;
-    }
     overlayCanvasRef.current!.style.cursor = 'default';
     cursorRef.current!.style.display = 'none';
   };
@@ -140,11 +87,28 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
       offscreenCanvasRef.current = document.createElement('canvas');
       offscreenCanvasRef.current.width = overlayCanvasRef.current!.width;
       offscreenCanvasRef.current.height = overlayCanvasRef.current!.height;
+      const offscreenCtx = offscreenCanvasRef.current.getContext('2d')!;
+      offscreenCtx.translate(
+        overlayCanvasRef.current!.width / 2,
+        overlayCanvasRef.current!.height / 2
+      );
     }
   };
 
-  // update the canvas size
-  const updateCanvasSize = useCallback(() => {
+  const setCanvasCenter = useCallback(() => {
+    if (!canvasRef.current || !overlayCanvasRef.current) return;
+
+    const overlayCtx = overlayCanvasRef.current!.getContext('2d');
+    const ctx = canvasRef.current!.getContext('2d');
+    const offscreenCtx = offscreenCanvasRef.current!.getContext('2d');
+
+    // Set the origin to the center
+    overlayCtx!.translate(ctx!.canvas.width / 2, ctx!.canvas.height / 2);
+    ctx!.translate(ctx!.canvas.width / 2, ctx!.canvas.height / 2);
+    offscreenCtx!.translate(ctx!.canvas.width / 2, ctx!.canvas.height / 2);
+  }, [canvasRef.current, overlayCanvasRef.current]);
+
+  const scaleCanvasSize = useCallback(() => {
     const canvas = canvasRef.current!;
     const offscreenCanvas = offscreenCanvasRef.current!;
     const overlayCanvas = overlayCanvasRef.current!;
@@ -160,45 +124,11 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
     strokesRef.current = strokes;
   };
 
-  const inpaintArea = useCallback(
-    (data: Uint8ClampedArray<ArrayBufferLike>) => {
-      for (let i = 0; i < data.length; i += 4) {
-        const alpha = data[i + 3];
-        if (alpha > 0) {
-          data[i] = 255; // Red
-          data[i + 1] = 255; // Green
-          data[i + 2] = 255; // Blue
-          data[i + 3] = 255; // Alpha
-        }
-      }
-    },
-    []
-  );
-
-  const inpaintBackground = useCallback(
-    (data: Uint8ClampedArray<ArrayBufferLike>) => {
-      for (let i = 0; i < data.length; i += 4) {
-        const alpha = data[i + 3];
-        if (alpha > 0) {
-          data[i] = 0; // Red
-          data[i + 1] = 0; // Green
-          data[i + 2] = 0; // Blue
-          data[i + 3] = 255; // Alpha
-        } else {
-          data[i] = 255;
-          data[i + 1] = 255;
-          data[i + 2] = 255;
-          data[i + 3] = 255;
-        }
-      }
-    },
-    []
-  );
+  const scaleLineWidth = useCallback(() => {
+    // setLineWidth(lineWidth * autoScale.current);
+  }, [lineWidth]);
 
   const generateMask = useCallback(() => {
-    if (strokesRef.current.length === 0) {
-      return null;
-    }
     const overlayCanvas = overlayCanvasRef.current!;
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = overlayCanvas.width;
@@ -214,12 +144,15 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
     );
     const data = imageData.data;
 
-    if (negativeMaskRef.current) {
-      inpaintBackground(data);
-    } else {
-      inpaintArea(data);
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = data[i + 3];
+      if (alpha > 0) {
+        data[i] = 255; // Red
+        data[i + 1] = 255; // Green
+        data[i + 2] = 255; // Blue
+        data[i + 3] = 255; // Alpha
+      }
     }
-
     maskCtx.putImageData(imageData, 0, 0);
 
     maskCtx.globalCompositeOperation = 'destination-over';
@@ -245,7 +178,7 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
 
     const link = document.createElement('a');
     link.download = 'mask.png';
-    link.href = mask || '';
+    link.href = mask;
     link.click();
   }, [generateMask]);
 
@@ -254,12 +187,13 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
       ctx: CanvasRenderingContext2D,
       stroke: Stroke | Point[],
       options: {
-        lineWidth?: number;
+        lineWidth: number;
         color: string;
         compositeOperation: 'source-over' | 'destination-out';
       }
     ) => {
-      const { color, compositeOperation } = options;
+      const { lineWidth, color, compositeOperation } = options;
+      ctx.lineWidth = lineWidth;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.globalCompositeOperation = compositeOperation;
@@ -267,13 +201,10 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
       ctx.beginPath();
 
       stroke.forEach((point, i) => {
-        const { x, y } = getTransformedPoint(point.x, point.y);
-        console.log('Drawing point:');
-        ctx.lineWidth = getTransformLineWidth(point.lineWidth);
         if (i === 0) {
-          ctx.moveTo(x, y);
+          ctx.moveTo(point.x, point.y);
         } else {
-          ctx.lineTo(x, y);
+          ctx.lineTo(point.x, point.y);
         }
       });
       if (compositeOperation === 'source-over') {
@@ -281,7 +212,7 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
       }
       ctx.stroke();
     },
-    [getTransformLineWidth, getTransformedPoint]
+    []
   );
 
   const drawLine = useCallback(
@@ -296,52 +227,28 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
     ) => {
       const { lineWidth, color, compositeOperation } = options;
 
-      ctx.lineWidth = getTransformLineWidth(lineWidth);
+      ctx.lineWidth = lineWidth;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.globalCompositeOperation = compositeOperation;
 
-      const { x, y } = getTransformedPoint(point.x, point.y);
-
-      ctx.lineTo(x, y);
+      ctx.lineTo(point.x, point.y);
       if (compositeOperation === 'source-over') {
         ctx.strokeStyle = color;
       }
       ctx.stroke();
     },
-    [getTransformLineWidth]
+    [lineWidth]
   );
 
-  const setTransform = useCallback(() => {
-    const ctx = canvasRef.current?.getContext('2d');
-    const overlayCtx = overlayCanvasRef.current?.getContext('2d');
-
-    if (!ctx || !overlayCtx) return;
-
-    ctx!.resetTransform();
-    overlayCtx!.resetTransform();
-
-    const { current: scale } = autoScale;
-    const { x: translateX, y: translateY } = translatePos.current;
-    ctx!.setTransform(scale, 0, 0, scale, translateX, translateY);
-
-    overlayCtx!.setTransform(scale, 0, 0, scale, translateX, translateY);
-  }, []);
-
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (disabled) {
-      return;
-    }
     if (!isDrawing.current) return;
 
-    const { offsetX, offsetY } = e.nativeEvent;
-    const currentX = offsetX;
-    const currentY = offsetY;
-
+    const { x, y } = getTransformedPoint(e);
+    console.log('Drawing:', e.nativeEvent, { x, y });
     currentStroke.current.push({
-      x: currentX,
-      y: currentY,
-      lineWidth
+      x,
+      y
     });
 
     const ctx = overlayCanvasRef.current!.getContext('2d');
@@ -350,12 +257,12 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
 
     drawLine(
       ctx!,
-      { x: currentX, y: currentY, lineWidth },
+      { x, y },
       { lineWidth, color: COLOR, compositeOperation: 'destination-out' }
     );
     drawLine(
       ctx!,
-      { x: currentX, y: currentY, lineWidth },
+      { x, y },
       { lineWidth, color: COLOR, compositeOperation: 'source-over' }
     );
 
@@ -363,26 +270,16 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
   };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (disabled) {
-      return;
-    }
     isDrawing.current = true;
 
     currentStroke.current = [];
-    const { offsetX, offsetY } = e.nativeEvent;
-
-    const currentX = offsetX;
-    const currentY = offsetY;
-
+    const { x, y } = getTransformedPoint(e);
     currentStroke.current.push({
-      x: currentX,
-      y: currentY,
-      lineWidth
+      x,
+      y
     });
 
     const ctx = overlayCanvasRef.current!.getContext('2d');
-    setTransform();
-    const { x, y } = getTransformedPoint(currentX, currentY);
     ctx!.beginPath();
     ctx!.moveTo(x, y);
 
@@ -391,9 +288,6 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
 
   const endDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     console.log('End Drawing:', e);
-    if (disabled) {
-      return;
-    }
     if (!isDrawing.current) {
       return;
     }
@@ -409,10 +303,9 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
 
   const clearOverlayCanvas = useCallback(() => {
     const ctx = overlayCanvasRef.current!.getContext('2d');
-    ctx!.resetTransform();
     ctx!.clearRect(
-      0,
-      0,
+      -overlayCanvasRef.current!.width / 2,
+      -overlayCanvasRef.current!.height / 2,
       overlayCanvasRef.current!.width,
       overlayCanvasRef.current!.height
     );
@@ -421,18 +314,24 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current!;
     const ctx = canvasRef.current!.getContext('2d');
-    ctx!.resetTransform();
-    ctx!.clearRect(0, 0, canvas.width, canvas.height);
+    ctx!.clearRect(
+      -canvas.width / 2,
+      -canvas.height / 2,
+      canvas.width,
+      canvas.height
+    );
   }, []);
 
   const clearOffscreenCanvas = useCallback(() => {
     const offscreenCanvas = offscreenCanvasRef.current!;
     const offscreenCtx = offscreenCanvas.getContext('2d')!;
-    offscreenCtx.resetTransform();
-    offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-    const { current: scale } = autoScale;
-    const { x: translateX, y: translateY } = translatePos.current;
-    offscreenCtx!.setTransform(scale, 0, 0, scale, translateX, translateY);
+
+    offscreenCtx.clearRect(
+      -offscreenCanvas.width / 2,
+      -offscreenCanvas.height / 2,
+      offscreenCanvas.width,
+      offscreenCanvas.height
+    );
   }, []);
 
   const onReset = useCallback(() => {
@@ -465,23 +364,23 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
 
       clearOverlayCanvas();
 
-      setTransform();
-
       strokes?.forEach((stroke: Point[], index) => {
         overlayCtx.save();
         drawStroke(overlayCtx, stroke, {
+          lineWidth,
           color: COLOR,
           compositeOperation: 'destination-out'
         });
 
         drawStroke(overlayCtx, stroke, {
+          lineWidth,
           color: COLOR,
           compositeOperation: 'source-over'
         });
         overlayCtx.restore();
       });
     },
-    [drawStroke]
+    [lineWidth, drawStroke]
   );
 
   const undo = () => {
@@ -503,6 +402,20 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
     link.remove();
   };
 
+  const scaleStrokes = (scale: number): Stroke[] => {
+    const strokes: Stroke[] = _.cloneDeep(strokesRef.current);
+    const newStrokes = strokes.map((stroke) => {
+      return stroke.map((point) => {
+        return {
+          x: point.x * scale,
+          y: point.y * scale
+        };
+      });
+    });
+    setStrokes(newStrokes);
+    return newStrokes;
+  };
+
   const drawImage = useCallback(async () => {
     if (!containerRef.current || !canvasRef.current) return;
     return new Promise<void>((resolve) => {
@@ -512,156 +425,85 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
         const canvas = canvasRef.current!;
         const ctx = canvas!.getContext('2d');
         const container = containerRef.current;
-        baseScale.current = Math.min(
+        const scale = Math.min(
           container!.offsetWidth / img.width,
           container!.offsetHeight / img.height,
           1
         );
 
-        canvas!.width = img.width * baseScale.current;
-        canvas!.height = img.height * baseScale.current;
+        canvas!.width = img.width * scale;
+        canvas!.height = img.height * scale;
 
-        // fit the image to the container
-        autoScale.current = autoScale.current || 1;
-        updateCanvasSize();
+        autoScale.current = scale / autoScale.current;
+
+        scaleLineWidth();
+        scaleCanvasSize();
+        setCanvasCenter();
 
         clearCanvas();
 
-        ctx!.drawImage(img, 0, 0, canvas!.width, canvas!.height);
+        ctx!.drawImage(
+          img,
+          -canvas.width / 2,
+          -canvas.height / 2,
+          canvas!.width,
+          canvas!.height
+        );
         resolve();
       };
     });
-  }, [imageSrc, containerRef.current, canvasRef.current, updateCanvasSize]);
+  }, [
+    imageSrc,
+    containerRef.current,
+    canvasRef.current,
+    scaleCanvasSize,
+    setCanvasCenter,
+    scaleLineWidth
+  ]);
 
-  const resetCanvas = useCallback(() => {
-    const canvas = canvasRef.current!;
-    const overlayCanvas = overlayCanvasRef.current!;
-    const ctx = canvas.getContext('2d');
-    const overlayCtx = overlayCanvas.getContext('2d');
-
-    autoScale.current = 1;
-    baseScale.current = 1;
-    translatePos.current = { x: 0, y: 0 };
-    contentPos.current = { x: 0, y: 0 };
-    canvas.style.transform = 'scale(1)';
-    overlayCanvas.style.transform = 'scale(1)';
-
-    cursorRef.current!.style.width = `${lineWidth}px`;
-    cursorRef.current!.style.height = `${lineWidth}px`;
-
-    ctx!.resetTransform();
-    overlayCtx!.resetTransform();
-  }, []);
-
-  const updateCursorSize = () => {
-    cursorRef.current!.style.width = `${lineWidth * autoScale.current}px`;
-    cursorRef.current!.style.height = `${lineWidth * autoScale.current}px`;
-  };
+  const handleResize = useCallback(
+    async (entries: ResizeObserverEntry[]) => {
+      const contentRect = entries[0].contentRect;
+      if (!contentRect.width || !contentRect.height || !imgLoaded) return;
+      await drawImage();
+      console.log('Image Loaded:', imageStatus, strokesRef.current);
+      if (imageStatus.isOriginal) {
+        redrawStrokes(strokesRef.current, 'resize');
+      }
+    },
+    [drawImage, scaleStrokes, redrawStrokes, onReset, imageStatus, imgLoaded]
+  );
 
   const initializeImage = useCallback(async () => {
-    if (imguid === preImguid.current) {
-      return;
-    }
-
     setImgLoaded(false);
     await drawImage();
-    onScaleImageSize?.({
-      width: canvasRef.current!.width,
-      height: canvasRef.current!.height
-    });
     setImgLoaded(true);
-
-    if (strokeCache.current[imguid]) {
-      strokeCache.current[preImguid.current] = strokesRef.current;
-      strokesRef.current = strokeCache.current[imguid];
-    } else if (preImguid.current !== imguid) {
-      strokeCache.current[preImguid.current] = strokesRef.current;
+    console.log('Image Loaded:', imageStatus, strokesRef.current);
+    if (imageStatus.isOriginal) {
+      redrawStrokes(strokesRef.current, 'initialize');
+    } else if (imageStatus.isResetNeeded) {
       onReset();
-      resetCanvas();
     }
-    preImguid.current = imguid;
-
-    if (strokesRef.current.length) {
-      redrawStrokes(strokesRef.current);
-    }
-    updateCursorSize();
-    saveImage();
-  }, [drawImage, onReset, redrawStrokes, imguid]);
-
-  const updateZoom = (scaleChange: number, mouseX: number, mouseY: number) => {
-    const newScale = _.round(autoScale.current + scaleChange, 2);
-
-    if (newScale < MIN_SCALE || newScale > MAX_SCALE) return;
-
-    const { current: oldScale } = autoScale;
-    const { x: oldTranslateX, y: oldTranslateY } = translatePos.current;
-
-    const centerX = (mouseX - oldTranslateX) / oldScale;
-    const centerY = (mouseY - oldTranslateY) / oldScale;
-
-    autoScale.current = newScale;
-
-    const newTranslateX = mouseX - centerX * newScale;
-    const newTranslateY = mouseY - centerY * newScale;
-
-    translatePos.current = { x: newTranslateX, y: newTranslateY };
-  };
-
-  const handleZoom = (event: React.WheelEvent<HTMLCanvasElement>) => {
-    const scaleChange = event.deltaY > 0 ? -ZOOM_SPEED : ZOOM_SPEED;
-
-    // current mouse position
-    const canvas = overlayCanvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
-    setCanvasTransformOrigin(event);
-
-    updateZoom(scaleChange, mouseX, mouseY);
-
-    overlayCanvasRef.current!.style.transform = `scale(${autoScale.current})`;
-    canvasRef.current!.style.transform = `scale(${autoScale.current})`;
-  };
-
-  const updateCursorPosOnZoom = (e: any) => {
-    cursorRef.current!.style.top = `${e.clientY - (lineWidth / 2) * autoScale.current}px`;
-    cursorRef.current!.style.left = `${e.clientX - (lineWidth / 2) * autoScale.current}px`;
-  };
-
-  const handleOnWheel = (event: any) => {
-    handleZoom(event);
-    updateCursorSize();
-    updateCursorPosOnZoom(event);
-    setActiveScale(autoScale.current);
-  };
-
-  const handleFitView = () => {
-    autoScale.current = baseScale.current;
-    translatePos.current = { x: 0, y: 0 };
-    setTransform();
-    overlayCanvasRef.current!.style.transform = `scale(${autoScale.current})`;
-    canvasRef.current!.style.transform = `scale(${autoScale.current})`;
-    setActiveScale(autoScale.current);
-    updateCursorSize();
-    redrawStrokes(strokesRef.current);
-  };
-
-  const handleBrushSizeChange = (value: number) => {
-    setLineWidth(value);
-    cursorRef.current!.style.width = `${value}px`;
-    cursorRef.current!.style.height = `${value}px`;
-  };
-
-  const handleOnChangeMask = (e: any) => {
-    negativeMaskRef.current = e.target.checked;
-    saveImage();
-  };
+  }, [drawImage, onReset, redrawStrokes, imageStatus]);
 
   useEffect(() => {
     initializeImage();
   }, [initializeImage]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    if (container) {
+      resizeObserver.current = new ResizeObserver(
+        _.throttle(handleResize, 100)
+      );
+      resizeObserver.current.observe(container);
+    }
+
+    return () => {
+      resizeObserver.current?.disconnect();
+    };
+  }, [handleResize, containerRef.current]);
 
   useEffect(() => {
     createOffscreenCanvas();
@@ -674,19 +516,16 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
     window.addEventListener('keydown', handleUndoShortcut);
     return () => {
       window.removeEventListener('keydown', handleUndoShortcut);
-      if (animationFrameIdRef.current !== null) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-      }
     };
   }, []);
 
-  // useEffect(() => {
-  //   if (disabled) {
-  //     overlayCanvasRef.current!.style.pointerEvents = 'none';
-  //   } else {
-  //     overlayCanvasRef.current!.style.pointerEvents = 'auto';
-  //   }
-  // }, [disabled]);
+  useEffect(() => {
+    if (disabled) {
+      overlayCanvasRef.current!.style.pointerEvents = 'none';
+    } else {
+      overlayCanvasRef.current!.style.pointerEvents = 'auto';
+    }
+  }, [disabled]);
 
   return (
     <div className="editor-wrapper">
@@ -712,9 +551,9 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
                   style={{ marginBlock: '4px 6px', marginLeft: 0, flex: 1 }}
                   vertical={false}
                   defaultValue={lineWidth}
-                  min={10}
+                  min={1}
                   max={60}
-                  onChange={handleBrushSizeChange}
+                  onChange={(value) => setLineWidth(value)}
                 />
               </div>
             }
@@ -744,29 +583,8 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
               <SyncOutlined className="font-size-14" />
             </Button>
           </Tooltip>
-          <Tooltip
-            title={intl.formatMessage({ id: 'playground.image.fitview' })}
-          >
-            <Button
-              onClick={handleFitView}
-              size="middle"
-              type="text"
-              disabled={disabled}
-            >
-              <ExpandOutlined className="font-size-14" />
-            </Button>
-          </Tooltip>
         </div>
         <div className="tools">
-          {/* <Checkbox
-            onChange={handleOnChangeMask}
-            className="flex-center"
-            value={negativeMaskRef.current}
-          >
-            <span className="font-size-12">
-              {intl.formatMessage({ id: 'playground.image.negativeMask' })}
-            </span>
-          </Checkbox> */}
           <Tooltip
             title={intl.formatMessage({ id: 'playground.image.saveMask' })}
           >
@@ -796,12 +614,10 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
         <canvas ref={canvasRef} style={{ position: 'absolute', zIndex: 1 }} />
         <canvas
           ref={overlayCanvasRef}
-          className="overlay-canvas"
-          style={{ position: 'absolute', zIndex: 10, cursor: 'none' }}
+          style={{ position: 'absolute', zIndex: 2 }}
           onMouseDown={startDrawing}
           onMouseUp={endDrawing}
           onMouseEnter={handleMouseEnter}
-          onWheel={handleOnWheel}
           onMouseMove={(e) => {
             handleMouseMove(e);
             draw(e);
@@ -816,13 +632,12 @@ const CanvasImageEditor: React.FC<CanvasImageEditorProps> = ({
           style={{
             display: 'none',
             position: 'fixed',
-            width: lineWidth * activeScale,
-            height: lineWidth * activeScale,
+            width: lineWidth,
+            height: lineWidth,
             backgroundColor: COLOR,
             borderRadius: '50%',
             pointerEvents: 'none',
-            cursor: 'none',
-            zIndex: 5
+            zIndex: 3
           }}
         />
       </div>

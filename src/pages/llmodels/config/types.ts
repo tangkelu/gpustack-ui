@@ -31,8 +31,6 @@ export interface ListItem {
 
 export interface FormData {
   backend?: string;
-  size?: number;
-  quantization?: number;
   categories?: string[];
   backend_parameters?: string[];
   backend_version?: string;
@@ -119,45 +117,4 @@ export interface GPUListItem {
   worker_id: number;
   worker_name: string;
   worker_ip: string;
-}
-
-export interface CatalogItem {
-  name: string;
-  id: number;
-  description: string;
-  home: string;
-  icon: string;
-  categories: string[];
-  capabilities: string[];
-  sizes: number[];
-  licenses: string[];
-  release_date: string;
-}
-
-export interface CatalogSpec {
-  source: string;
-  huggingface_repo_id: string;
-  huggingface_filename: string;
-  ollama_library_model_name: string;
-  model_scope_model_id: string;
-  model_scope_file_path: string;
-  local_path: string;
-  name: string;
-  description: string;
-  meta: Record<string, any>;
-  replicas: number;
-  ready_replicas: number;
-  categories: any[];
-  placement_strategy: string;
-  cpu_offloading: boolean;
-  distributed_inference_across_workers: boolean;
-  worker_selector: Record<string, any>;
-  gpu_selector: {
-    gpu_ids: string[];
-  };
-  backend: string;
-  backend_version: string;
-  backend_parameters: any[];
-  quantization: string;
-  size: number;
 }

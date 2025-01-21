@@ -69,7 +69,7 @@ const ViewCodeModal: React.FC<ViewModalProps> = (props) => {
     const printLog = logcommand ? `print(response.${logcommand})` : '';
 
     if (lang === langMap.shell) {
-      const code = `curl ${window.location.origin}/v1-openai/${api} \\\n-H "Content-Type: application/json" \\\n-H "Authorization: Bearer $\{YOUR_GPUSTACK_API_KEY}" \\\n-d '${JSON.stringify(
+      const code = `curl ${window.location.origin}/v1-openai/${api} \\\n-H "Content-Type: application/json" \\\n-H "Authorization: Bearer $\{YOUR_GPUCluster_API_KEY}" \\\n-d '${JSON.stringify(
         {
           ...parameters,
           ...payload
@@ -80,7 +80,7 @@ const ViewCodeModal: React.FC<ViewModalProps> = (props) => {
       return code;
     }
     if (lang === langMap.javascript) {
-      const code = `const OpenAI = require("openai");\n\nconst openai = new OpenAI({\n  "apiKey": "YOUR_GPUSTACK_API_KEY",\n  "baseURL": "${BaseURL}"\n});\n\nasync function main(){\n  const params = ${JSON.stringify(
+      const code = `const OpenAI = require("openai");\n\nconst openai = new OpenAI({\n  "apiKey": "YOUR_GPUCluster_API_KEY",\n  "baseURL": "${BaseURL}"\n});\n\nasync function main(){\n  const params = ${JSON.stringify(
         {
           ...parameters,
           ...payload
@@ -106,7 +106,7 @@ const ViewCodeModal: React.FC<ViewModalProps> = (props) => {
         ''
       );
       const params = formatPyParams(payload);
-      const code = `from openai import OpenAI\n\nclient = OpenAI(\n  base_url="${BaseURL}", \n  api_key="YOUR_GPUSTACK_API_KEY"\n)\n\nresponse = client.${clientType}(\n${formattedParams}${params})\n${printLog}`;
+      const code = `from openai import OpenAI\n\nclient = OpenAI(\n  base_url="${BaseURL}", \n  api_key="YOUR_GPUCluster_API_KEY"\n)\n\nresponse = client.${clientType}(\n${formattedParams}${params})\n${printLog}`;
       return code;
     }
     return '';

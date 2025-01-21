@@ -137,8 +137,6 @@ export const OpenAIViewCode = {
   }
 };
 
-export const SpeechToTextFormat = ['.mp3', '.mp4', '.wav', '.m4a'];
-
 export const promptList = [
   'a lovely cat.',
   "Digital art, portrait of an anthropomorphic roaring Tiger warrior with full armor, close up in the middle of a battle, behind him there is a banner with the text 'Open Source'.",
@@ -156,13 +154,3 @@ export const promptList = [
   'A full shot of two people jogging at sunset,  featuring a vibrant, warm color palette shifting from twilight blues to peachy-orange tones, with visible sun rays and lens flares, conveying a sense of leisure and athleticism.',
   'A close-up portrait of a golden retriever wearing black-framed glasses,  exhibiting a rich golden-brown coat with a fluffy texture,  and a neutral, light gray background.'
 ];
-
-export const extractErrorMessage = (result: any) => {
-  return (
-    result?.data?.data?.detail ||
-    result?.data?.data?.message ||
-    result?.data?.error?.message ||
-    result?.data?.error ||
-    ''
-  );
-};

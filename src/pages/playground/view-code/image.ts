@@ -13,14 +13,14 @@ export const generateImageCode = ({
   let curlCode = `
 curl ${host}${api} \\
 -H "Content-Type: application/json" \\
--H "Authorization: Bearer $\{YOUR_GPUSTACK_API_KEY}" \\
+-H "Authorization: Bearer $\{YOUR_GPUCluster_API_KEY}" \\
 ${formatCurlArgs(parameters, isFormdata)}`.trim();
 
   if (edit) {
     curlCode = `
 curl ${host}${api} \\
 -H "Content-Type: multipart/form-data" \\
--H "Authorization: Bearer $\{YOUR_GPUSTACK_API_KEY}" \\
+-H "Authorization: Bearer $\{YOUR_GPUCluster_API_KEY}" \\
 -F image="@image.png" \\
 -F mask="@mask.png" \\
 ${formatCurlArgs(_.omit(parameters, ['mask', 'image']), isFormdata)}`
@@ -34,7 +34,7 @@ import requests\n
 url="${host}${api}"
 headers = {
   "Content-type": "application/json",
-  "Authorization": "Bearer $\{YOUR_GPUSTACK_API_KEY}"
+  "Authorization": "Bearer $\{YOUR_GPUCluster_API_KEY}"
 }
 data = ${JSON.stringify(parameters, null, 2).replace(/null/g, 'None')}\n
 response = requests.post(url, headers=headers, json=data)
@@ -47,7 +47,7 @@ const axios = require('axios');
 const url = "http://localhost/v1-openai/images/generations";
 const headers = {
   "Content-type": "application/json",
-  "Authorization": "Bearer $\{YOUR_GPUSTACK_API_KEY}"
+  "Authorization": "Bearer $\{YOUR_GPUCluster_API_KEY}"
 };
 const data = ${fomatNodeJsParams(parameters)};
 
@@ -74,13 +74,13 @@ export const generateOpenaiImageCode = ({
   let curlCode = `
 curl ${host}${api} \\
 -H "Content-Type: multipart/form-data" \\
--H "Authorization: Bearer $\{YOUR_GPUSTACK_API_KEY}" \\
+-H "Authorization: Bearer $\{YOUR_GPUCluster_API_KEY}" \\
 ${formatCurlArgs(parameters, isFormdata)}`.trim();
   if (edit) {
     curlCode = `
 curl ${host}${api} \\
 -H "Content-Type: application/json" \\
--H "Authorization: Bearer $\{YOUR_GPUSTACK_API_KEY}" \\
+-H "Authorization: Bearer $\{YOUR_GPUCluster_API_KEY}" \\
 -F image="@image.png" \\
 -F mask="@mask.png" \\
 ${formatCurlArgs(_.omit(parameters, ['mask', 'image']), isFormdata)}`
@@ -93,7 +93,7 @@ ${formatCurlArgs(_.omit(parameters, ['mask', 'image']), isFormdata)}`
 from openai import OpenAI\n
 client = OpenAI(
   base_url="${host}/v1-openai", 
-  api_key="YOUR_GPUSTACK_API_KEY"
+  api_key="YOUR_GPUCluster_API_KEY"
 )
 
 response = client.images.generate(\n${formatPyParams({ ...parameters })})\n
@@ -108,7 +108,7 @@ print(response.data[0].b64_json)`.trim();
 const OpenAI = require("openai");
 
 const openai = new OpenAI({
-  "apiKey": "YOUR_GPUSTACK_API_KEY",
+  "apiKey": "YOUR_GPUCluster_API_KEY",
   "baseURL": "${host}/v1-openai"
 });
 

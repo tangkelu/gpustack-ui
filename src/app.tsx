@@ -1,4 +1,4 @@
-import { GPUStackVersionAtom, UpdateCheckAtom } from '@/atoms/user';
+import { GPUClusterVersionAtom, UpdateCheckAtom } from '@/atoms/user';
 import { setAtomStorage } from '@/atoms/utils';
 import { requestConfig } from '@/request-config';
 import {
@@ -49,7 +49,7 @@ export async function getInitialState(): Promise<{
     try {
       const data = await queryVersionInfo();
       const isProduction = data.version?.indexOf('0.0.0') === -1;
-      setAtomStorage(GPUStackVersionAtom, {
+      setAtomStorage(GPUClusterVersionAtom, {
         ...data,
         isProduction
       });

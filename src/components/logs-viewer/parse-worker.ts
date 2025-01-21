@@ -1,173 +1,154 @@
 import { controlSeqRegex } from './config';
 
+let uid = 0;
+
+const setId = () => {
+  uid += 1;
+  return uid;
+};
+
 const removeBrackets = (str: string) => {
   return str?.replace?.(/^\(…\)/, '');
 };
 
-class AnsiParser {
-  private cursorRow: number = 0;
-  private cursorCol: number = 0;
-  private screen: string[][] = [['']];
-  private rawDataRows: number = 0;
-  private uid: number = 0;
-  private isProcessing: boolean = false;
-  private taskQueue: string[] = [];
+const isClean = (input: string) => {
+  let match = controlSeqRegex.exec(input) || [];
+  const command = match?.[3];
+  const n = parseInt(match?.[1], 10) || 1;
+  return command === 'J' && n === 2;
+};
 
-  constructor() {
-    this.reset();
-  }
+const parseAnsi = (input: string, setId: () => number) => {
+  let cursorRow = 0;
+  let cursorCol = 0;
+  let screen = [['']];
+  let lastIndex = 0;
 
-  public reset() {
-    this.cursorRow = 0;
-    this.cursorCol = 0;
-    this.screen = [['']];
-    this.rawDataRows = 0;
-    this.uid = this.uid + 1;
-  }
+  // let input = inputStr.replace(replaceLineRegex, '\n');
 
-  private setId() {
-    this.uid += 1;
-    return this.uid;
-  }
-
-  private handleText(text: string) {
-    for (let i = 0; i < text.length; i++) {
-      let char = text[i];
+  // handle the \r and \n characters in the text
+  const handleText = (text: string) => {
+    let processed = '';
+    for (let char of text) {
       if (char === '\r') {
-        let nextChar = text[i + 1];
-        if (nextChar === '\n') {
-          continue; // windows new line: \r\n
-        } else {
-          this.cursorCol = 0; // move to the beginning of the line
-        }
+        cursorCol = 0; // move to the beginning of the line
       } else if (char === '\n') {
-        this.rawDataRows++;
-        this.cursorRow++;
-        this.cursorCol = 0; // back to the beginning of the line
-        if (!this.screen[this.cursorRow]) {
-          this.screen[this.cursorRow] = [''];
-        }
+        cursorRow++; // move to the next line
+        cursorCol = 0; // move to the beginning of the line
+        screen[cursorRow] = screen[cursorRow] || ['']; // create a new line if it does not exist
       } else {
-        const currentLine = this.screen[this.cursorRow];
-        currentLine[this.cursorCol] = char;
-        this.cursorCol++;
+        // add the character to the screen content array
+        screen[cursorRow][cursorCol] = char;
+        cursorCol++;
       }
     }
-  }
+    return processed;
+  };
 
-  private handleAnsiSequence(match: RegExpExecArray, isEnd: boolean) {
-    const n = parseInt(match[1] || '1', 10);
-    const m = parseInt(match[2] || '1', 10);
+  let output = ''; // output text
+
+  let match;
+
+  // ANSI color map
+  const colorMap: Record<string, string> = {
+    '30': 'black',
+    '31': 'red',
+    '32': 'green',
+    '33': 'yellow',
+    '34': 'blue',
+    '35': 'magenta',
+    '36': 'cyan',
+    '37': 'white'
+  };
+
+  let currentStyle = ''; // current text style
+
+  // match ANSI control characters
+  while ((match = controlSeqRegex.exec(input)) !== null) {
+    // handle text before the control character
+    let textBeforeControl = input.slice(lastIndex, match.index);
+    output += handleText(textBeforeControl); // add the processed text to the output
+    lastIndex = controlSeqRegex.lastIndex; // update the last index
+
+    const n = parseInt(match[1], 10) || 1;
+    const m = parseInt(match[2], 10) || 1;
     const command = match[3];
 
+    // handle ANSI control characters
     switch (command) {
-      case 'A':
-        this.cursorRow = Math.max(0, this.cursorRow - n);
+      case 'A': // up
+        cursorRow = Math.max(0, cursorRow - n);
+        if (cursorRow === 0) {
+          // screen = [['']];
+          // cursorCol = 0;
+        }
         break;
-      case 'B':
-        this.cursorRow += n;
+      case 'B': // down
+        cursorRow += n;
         break;
-      case 'C': // move the cursor to the right
-        this.cursorCol += n;
+      case 'C': // right
+        cursorCol += n;
         break;
-      case 'D': // move the cursor to the left
-        this.cursorCol = Math.max(0, this.cursorCol - n);
+      case 'D': // left
+        cursorCol = Math.max(0, cursorCol - n);
         break;
       case 'H': // move the cursor to the specified position (n, m)
-        this.cursorRow = Math.max(0, n - 1);
-        this.cursorCol = Math.max(0, m - 1);
+        cursorRow = Math.max(0, n - 1);
+        cursorCol = Math.max(0, m - 1);
         break;
       case 'J': // clear the screen
         if (n === 2) {
-          this.reset();
+          console.log('clear====');
+          screen = [['']];
+          cursorRow = 0;
+          cursorCol = 0;
         }
         break;
-      case 'm': // style: do not handle now
+      case 'm':
+        // if (match[1] === '0') {
+        //   currentStyle = '';
+        // } else if (colorMap[match[1]]) {
+        //   currentStyle = `color: ${colorMap[match[1]]};`;
+        // }
         break;
     }
 
-    while (this.screen.length <= this.cursorRow && !isEnd) {
-      this.screen.push(['']);
+    // check if the row and column are within the screen content array
+    while (screen.length <= cursorRow) {
+      screen.push(['']);
     }
-    while (this.screen[this.cursorRow].length <= this.cursorCol && !isEnd) {
-      this.screen[this.cursorRow].push('');
-    }
-  }
-
-  private processInput(input: string) {
-    let match: RegExpExecArray | null;
-    let lastIndex = 0;
-
-    while ((match = controlSeqRegex.exec(input)) !== null) {
-      const textBeforeControl = input.slice(lastIndex, match.index);
-      this.handleText(textBeforeControl);
-
-      lastIndex = controlSeqRegex.lastIndex;
-
-      this.handleAnsiSequence(match, lastIndex === input.length - 1);
-    }
-
-    const remainingText = input.slice(lastIndex);
-    this.handleText(remainingText);
-
-    const result = this.screen.map((row) => ({
-      content: removeBrackets(row.join('')),
-      uid: this.setId()
-    }));
-
-    return {
-      data: result,
-      lines: this.rawDataRows
-    };
-  }
-
-  private async processQueue(): Promise<void> {
-    if (this.isProcessing) {
-      return;
-    }
-
-    this.isProcessing = true;
-
-    while (this.taskQueue.length > 0) {
-      const input = this.taskQueue.shift();
-
-      if (input) {
-        try {
-          const result = this.processInput(input);
-          self.postMessage({ result: result.data, lines: result.lines });
-        } catch (error) {
-          console.error('Error processing input:', error);
-        }
-      }
-
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
-    }
-
-    this.isProcessing = false;
-    if (this.taskQueue.length > 0) {
-      this.processQueue();
+    while (screen[cursorRow].length <= cursorCol) {
+      screen[cursorRow].push('');
     }
   }
 
-  public enqueueData(input: string): void {
-    this.taskQueue.push(input);
-    if (!this.isProcessing) {
-      this.processQueue();
-    }
-  }
-}
-const parser = new AnsiParser();
+  // handle the remaining text
+  output += handleText(input.slice(lastIndex));
 
-self.onmessage = function (event) {
-  const { inputStr, reset } = event.data;
-  if (reset) {
-    parser.reset();
+  let result = [];
+  for (let row = 0; row < screen.length; row++) {
+    let rowContent = screen[row].join('');
+    result.push({
+      content: removeBrackets(rowContent),
+      uid: setId()
+    });
   }
-  parser.enqueueData(inputStr);
+  result.push({
+    content: output,
+    uid: setId()
+  });
+
+  return result;
 };
 
-self.onerror = function (event) {
-  console.error('parse logs error===', event);
+self.onmessage = function (event) {
+  const { inputStr } = event.data;
+
+  const parsedData = Array.from(parseAnsi(inputStr, setId));
+
+  const result = parsedData.map((item) => ({
+    content: item.content,
+    uid: item.uid
+  }));
+  self.postMessage(result);
 };

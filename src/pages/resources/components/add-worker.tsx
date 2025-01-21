@@ -41,7 +41,7 @@ const AddWorker: React.FC<ViewModalProps> = (props) => {
       width={600}
       styles={{
         body: {
-          height: 550
+          height: 420
         }
       }}
       footer={null}

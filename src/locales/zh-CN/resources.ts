@@ -50,9 +50,9 @@ export default {
   'resources.worker.current.version': '当前版本为 {version}',
   'resources.worker.select.command': '选择一个标签生成命令并使用复制按钮复制',
   'resources.worker.driver.install':
-    '在安装 GPUStack 之前，确保系统上安装了所有必需的驱动程序和库',
+    '在安装 GPUCluster 之前，确保系统上安装了所有必需的驱动程序和库',
   'resources.worker.script.install': '脚本安装',
-  'resources.worker.container.install': '容器安装(仅支持 Linux)',
+  'resources.worker.container.install': '容器安装',
   'resources.worker.cann.tips':
-    '按需要挂载的 GPU index 设置 <span style="color: #000;font-weight: 600">ASCEND_VISIBLE_DEVICES</span>，如需挂载 GPU0 - GPU3，则设为 <span style="color: #000;font-weight: 600">ASCEND_VISIBLE_DEVICES=0,1,2,3</span> 或 <span style="color: #000;font-weight: 600">ASCEND_VISIBLE_DEVICES=0-3</span>'
+    '若 GPU 数量为 1，则设 ASCEND_VISIBLE_DEVICES=0；若大于 1，则设为索引范围（如 8 张为 0-7）'
 };

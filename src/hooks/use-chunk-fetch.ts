@@ -1,4 +1,4 @@
-import { throttle } from 'lodash';
+import { split } from 'lodash';
 import qs from 'query-string';
 import { useEffect, useRef } from 'react';
 
@@ -21,52 +21,50 @@ const useSetChunkFetch = () => {
   const readTextEventStreamData = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
     decoder: TextDecoder,
-    callback: (data: any) => void,
-    delay = 200
+    callback: (data: any) => void
   ) => {
-    class BufferManager {
-      private buffer: any[] = [];
-
-      public add(data: any) {
-        this.buffer.push(data);
-      }
-
-      public flush() {
-        if (this.buffer.length > 0) {
-          const currentBuffer = [...this.buffer];
-          this.buffer = [];
-          currentBuffer.forEach((item) => callback(item));
-        }
-      }
-
-      public getBuffer() {
-        return this.buffer;
-      }
+    const { done, value } = await reader.read();
+    if (done) {
+      return;
     }
-    const bufferManager = new BufferManager();
 
-    const throttledCallback = throttle(() => {
-      bufferManager.flush();
-    }, delay);
+    const chunk = decoder.decode(value, { stream: true });
+    console.log('chunk===', chunk);
+    callback(chunk);
+    // console.log('chunkDataRef.current===2', chunkDataRef.current);
 
-    let isReading = true;
+    await readTextEventStreamData(reader, decoder, callback);
+  };
 
-    while (true) {
-      const { done, value } = await reader.read();
+  const readTextEventStreamDataByLine = async (
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    decoder: TextDecoder,
+    callback: (data: any) => void
+  ) => {
+    const { done, value } = await reader.read();
+    if (done) {
+      return;
+    }
 
-      if (done) {
-        isReading = false;
-        bufferManager.flush();
-        break;
-      }
+    bufferCacheRef.current += decoder.decode(value, { stream: true });
+    const lines = split(bufferCacheRef.current, /\r?\n/);
+    bufferCacheRef.current = lines.pop();
+    for (const line of lines) {
+      callback(line);
+    }
 
-      try {
-        const chunk = decoder.decode(value, { stream: true });
-        bufferManager.add(chunk);
-        throttledCallback();
-      } catch (error) {
-        console.log('error============:', error);
-      }
+    await readTextEventStreamDataByLine(reader, decoder, callback);
+  };
+
+  const readTextEventStreamDataByLineWithBuffer = async (
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    decoder: TextDecoder,
+    callback: (data: any) => void
+  ) => {
+    await readTextEventStreamDataByLine(reader, decoder, callback);
+
+    if (bufferCacheRef.current.length > 0) {
+      callback(bufferCacheRef.current);
     }
   };
 
@@ -96,8 +94,6 @@ const useSetChunkFetch = () => {
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        handler(error?.message);
         return;
       }
 

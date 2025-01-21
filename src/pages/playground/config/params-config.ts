@@ -14,13 +14,10 @@ export const imageSizeOptions: {
     width: 0,
     height: 0
   },
-  { label: '512x512(1:1)', value: '512x512', width: 512, height: 512 },
-  { label: '512x1024(1:2)', value: '512x1024', width: 512, height: 1024 },
-  { label: '768x1024(3:4)', value: '768x1024', width: 768, height: 1024 },
-  { label: '1024x768(4:3)', value: '1024x768', width: 1024, height: 768 },
-  { label: '1024x576(16:9)', value: '1024x576', width: 1024, height: 576 },
-  { label: '576x1024(9:16)', value: '576x1024', width: 576, height: 1024 },
-  { label: '1024x1024(1:1)', value: '1024x1024', width: 1024, height: 1024 }
+  { label: '512x512', value: '512x512', width: 512, height: 512 },
+  { label: '768x1024', value: '768x1024', width: 768, height: 1024 },
+  { label: '1024x768', value: '1024x768', width: 1024, height: 768 },
+  { label: '1024x1024', value: '1024x1024', width: 1024, height: 1024 }
 ];
 
 export const TTSParamsConfig: ParamsSchema[] = [
@@ -146,6 +143,23 @@ export const ImageParamsConfig: ParamsSchema[] = [
 ];
 
 export const ImageEidtParamsConfig: ParamsSchema[] = [
+  // {
+  //   type: 'Slider',
+  //   name: 'brush_size',
+  //   label: {
+  //     text: 'Brush Size',
+  //     isLocalized: false
+  //   },
+  //   attrs: {
+  //     min: 25,
+  //     max: 80
+  //   },
+  //   rules: [
+  //     {
+  //       required: false
+  //     }
+  //   ]
+  // },
   {
     type: 'InputNumber',
     name: 'n',
@@ -264,6 +278,7 @@ export const ImageAdvancedParamsConfig: ParamsSchema[] = [
     type: 'Select',
     name: 'schedule_method',
     options: [
+      { label: 'default', value: 'default' },
       { label: 'discrete', value: 'discrete' },
       { label: 'karras', value: 'karras' },
       { label: 'exponential', value: 'exponential' },
@@ -311,30 +326,7 @@ export const ImageAdvancedParamsConfig: ParamsSchema[] = [
     },
     attrs: {
       min: 1.0,
-      max: 100,
-      step: 0.1
-    },
-    rules: [
-      {
-        required: false
-      }
-    ]
-  },
-  {
-    type: 'InputNumber',
-    name: 'cfg_scale',
-    label: {
-      text: 'CFG Scale',
-      isLocalized: false
-    },
-    description: {
-      text: 'playground.image.cfg_scale.tip',
-      html: false,
-      isLocalized: true
-    },
-    attrs: {
-      min: 1.0,
-      max: 100,
+      max: 10,
       step: 0.1
     },
     rules: [
@@ -367,15 +359,37 @@ export const ImageAdvancedParamsConfig: ParamsSchema[] = [
     ]
   },
   {
-    type: 'TextArea',
+    type: 'InputNumber',
+    name: 'cfg_scale',
+    label: {
+      text: 'CFG Scale',
+      isLocalized: false
+    },
+    description: {
+      text: 'playground.image.cfg_scale.tip',
+      html: false,
+      isLocalized: true
+    },
+    attrs: {
+      min: 1.0,
+      max: 10,
+      step: 0.1
+    },
+    rules: [
+      {
+        required: false
+      }
+    ]
+  },
+  {
+    type: 'Input',
     name: 'negative_prompt', // e.g. ng_deepnegative_v1_75t,(badhandv4:1.2),EasyNegative,(worst quality:2),
     label: {
       text: 'playground.image.params.negativePrompt',
       isLocalized: true
     },
     attrs: {
-      trim: false,
-      autoSize: { minRows: 2, maxRows: 2 }
+      trim: false
     },
     rules: [
       {

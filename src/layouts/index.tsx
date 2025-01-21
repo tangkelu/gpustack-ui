@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { routeCacheAtom, setRouteCache } from '@/atoms/route-cache';
-import { GPUStackVersionAtom, UpdateCheckAtom, userAtom } from '@/atoms/user';
+import { GPUClusterVersionAtom, UpdateCheckAtom, userAtom } from '@/atoms/user';
 import ShortCuts, {
   modalConfig as ShortCutsConfig
 } from '@/components/short-cuts';
@@ -94,13 +94,11 @@ const mapRoutes = (routes: IRoute[], role: string) => {
 };
 
 export default (props: any) => {
-  const { initialize: initialize } = useOverlayScroller({
-    defer: false
-  });
+  const { initialize: initialize } = useOverlayScroller();
   const { initialize: initializeMenu } = useOverlayScroller();
   const [userInfo] = useAtom(userAtom);
   const [routeCache] = useAtom(routeCacheAtom);
-  const [version] = useAtom(GPUStackVersionAtom);
+  const [version] = useAtom(GPUClusterVersionAtom);
   const [updateCheck] = useAtom(UpdateCheckAtom);
   const location = useLocation();
   const navigate = useNavigate();
@@ -211,8 +209,7 @@ export default (props: any) => {
   useEffect(() => {
     const body = document.querySelector('body');
     if (body) {
-      const ins = initialize(body);
-      window.__GPUSTACK_BODY_SCROLLER__ = ins;
+      initialize(body);
     }
   }, [initialize]);
 
@@ -295,7 +292,7 @@ export default (props: any) => {
         openKeys={false}
         disableMobile={true}
         header={{
-          title: <div style={{ fontSize: 36 }}> gpuStack </div>
+          title: <div style={{ fontSize: 36 }}> GPUCluster </div>
         }}
         siderWidth={220}
         onCollapse={(collapsed) => {

@@ -73,7 +73,7 @@ export const getRightRenderContent = (opts: {
     {
       key: 'site',
       icon: <HomeOutlined />,
-      label: 'GPUStack',
+      label: 'GPUCluster',
       url: externalLinks.site
     },
     {
@@ -131,44 +131,45 @@ export const getRightRenderContent = (opts: {
               )}
             </span>
           </span>
-        ),
-        children: helpList.map((item) => ({
-          key: item.key,
-          label: (
-            <span className="flex flex-center">
-              {item.icon}
-              {item.key === 'version' ? (
-                <>
-                  <a className="m-l-8">{item.label}</a>
-                  {showUpgrade && (
-                    <span className="new-icon">
-                      <span className="text">
-                        {intl.formatMessage({ id: 'common.text.new' })}
-                      </span>
-                    </span>
-                  )}
-                </>
-              ) : (
-                <a
-                  className="m-l-8"
-                  href={item.url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {item.label}
-                </a>
-              )}
-            </span>
-          ),
-          onClick() {
-            if (item.key === 'version') {
-              opts.runtimeConfig.showVersion();
-            }
-            if (item.key === 'shortcuts') {
-              opts.runtimeConfig.showShortcuts();
-            }
-          }
-        }))
+        )
+        // ),
+        // children: helpList.map((item) => ({
+        //   key: item.key,
+        //   label: (
+        //     <span className="flex flex-center">
+        //       {item.icon}
+        //       {item.key === 'version' ? (
+        //         <>
+        //           <a className="m-l-8">{item.label}</a>
+        //           {showUpgrade && (
+        //             <span className="new-icon">
+        //               <span className="text">
+        //                 {intl.formatMessage({ id: 'common.text.new' })}
+        //               </span>
+        //             </span>
+        //           )}
+        //         </>
+        //       ) : (
+        //         <a
+        //           className="m-l-8"
+        //           href={item.url}
+        //           target="_blank"
+        //           rel="noreferrer"
+        //         >
+        //           {item.label}
+        //         </a>
+        //       )}
+        //     </span>
+        //   ),
+        //   onClick() {
+        //     if (item.key === 'version') {
+        //       opts.runtimeConfig.showVersion();
+        //     }
+        //     if (item.key === 'shortcuts') {
+        //       opts.runtimeConfig.showShortcuts();
+        //     }
+        //   }
+        // }))
       }
     ]
   };

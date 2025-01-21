@@ -15,7 +15,7 @@ import {
   ThunderboltFilled
 } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
-import { Button, Col, Divider, Row, Space, Tag, Tooltip } from 'antd';
+import { Col, Divider, Row, Space, Tag, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 import React, { useCallback } from 'react';
@@ -221,8 +221,7 @@ const InstanceItem: React.FC<InstanceItemProps> = ({
                         <Tag
                           color="cyan"
                           style={{
-                            opacity: 0.75,
-                            borderRadius: 12
+                            opacity: 0.75
                           }}
                         >
                           <InfoCircleOutlined className="m-r-5" />
@@ -242,8 +241,7 @@ const InstanceItem: React.FC<InstanceItemProps> = ({
                         <Tag
                           color="processing"
                           style={{
-                            opacity: 0.75,
-                            borderRadius: 12
+                            opacity: 0.75
                           }}
                         >
                           <InfoCircleOutlined className="m-r-5" />
@@ -262,26 +260,25 @@ const InstanceItem: React.FC<InstanceItemProps> = ({
                   >
                     {item.state && (
                       <StatusTag
+                        actions={
+                          item.state === InstanceStatusMap.Error
+                            ? [
+                                {
+                                  label: intl.formatMessage({
+                                    id: 'common.button.viewlog'
+                                  }),
+                                  key: 'viewlog',
+                                  icon: <IconFont type="icon-logs" />,
+                                  onClick: () =>
+                                    handleChildSelect('viewlog', item, list)
+                                }
+                              ]
+                            : []
+                        }
                         download={
                           item.state === InstanceStatusMap.Downloading
                             ? { percent: item.download_progress }
                             : undefined
-                        }
-                        extra={
-                          item.state === InstanceStatusMap.Error ? (
-                            <Button
-                              type="link"
-                              size="small"
-                              style={{ paddingLeft: 0 }}
-                              onClick={() =>
-                                handleChildSelect('viewlog', item, list)
-                              }
-                            >
-                              {intl.formatMessage({
-                                id: 'models.list.more.logs'
-                              })}
-                            </Button>
-                          ) : null
                         }
                         statusValue={{
                           status:

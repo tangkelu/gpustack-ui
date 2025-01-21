@@ -1,24 +1,15 @@
 import _, { throttle } from 'lodash';
 import List from 'rc-virtual-list';
-import React, {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState
-} from 'react';
-import './styles/logs-list.less';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface LogsInnerProps {
-  ref?: any;
   data: { content: string; uid: number }[];
-  onScroll?: (data: { isTop: boolean; isBottom: boolean }) => void;
+  onScroll?: (e: any) => void;
   diffHeight?: number;
 }
 
-const LogsInner: React.FC<LogsInnerProps> = forwardRef((props, ref) => {
-  const { data, diffHeight = 96, onScroll } = props;
+const LogsInner: React.FC<LogsInnerProps> = (props) => {
+  const { data, diffHeight = 96 } = props;
   const viewportHeight = window.innerHeight;
   const viewHeight = viewportHeight - diffHeight;
   const [innerHieght, setInnerHeight] = useState(viewHeight);
@@ -40,21 +31,13 @@ const LogsInner: React.FC<LogsInnerProps> = forwardRef((props, ref) => {
     [data, scroller.current, stopScroll.current]
   );
 
-  const updataPositionToTop = useCallback(
-    throttle(() => {
-      if (!stopScroll.current && data.length > 0) {
-        scroller.current?.scrollTo?.({
-          index: 0,
-          align: 'bottom'
-        });
-      }
-    }, 200),
-    [data, scroller.current, stopScroll.current]
-  );
+  const debounceResetStopScroll = _.debounce(() => {
+    stopScroll.current = false;
+  }, 30000);
 
   const updatePositionToTop = useCallback(
-    _.throttle((data: { isTop: boolean; isBottom: boolean }) => {
-      props.onScroll?.(data);
+    _.throttle((isTop: boolean) => {
+      props.onScroll?.(isTop);
     }, 200),
     [props.onScroll]
   );
@@ -78,28 +61,20 @@ const LogsInner: React.FC<LogsInnerProps> = forwardRef((props, ref) => {
     return virtualList.scrollTop <= 0;
   }, []);
 
-  const handleOnScroll = useCallback((e: any) => {
-    const isBottom = isScrollBottom(logsWrapper.current);
-    const isTop = isScrollTop(logsWrapper.current);
-    if (isBottom) {
-      stopScroll.current = false;
-    } else {
-      stopScroll.current = true;
-    }
-    updatePositionToTop({
-      isTop,
-      isBottom
-    });
-  }, []);
-
-  useImperativeHandle(ref, () => ({
-    scrollToBottom() {
-      updataPositionToBottom();
+  const handleOnScroll = useCallback(
+    (e: any) => {
+      const isBottom = isScrollBottom(logsWrapper.current);
+      const isTop = isScrollTop(logsWrapper.current);
+      if (isBottom) {
+        stopScroll.current = false;
+      } else {
+        stopScroll.current = true;
+      }
+      debounceResetStopScroll();
+      updatePositionToTop(isTop);
     },
-    scrollToTop() {
-      updataPositionToTop();
-    }
-  }));
+    [debounceResetStopScroll]
+  );
 
   useEffect(() => {
     updataPositionToBottom();
@@ -117,7 +92,7 @@ const LogsInner: React.FC<LogsInnerProps> = forwardRef((props, ref) => {
     };
   }, [diffHeight]);
   return (
-    <div ref={logsWrapper} className="logs-wrap" style={{ height: '100%' }}>
+    <div ref={logsWrapper}>
       <List
         ref={scroller}
         onScroll={handleOnScroll}
@@ -125,7 +100,6 @@ const LogsInner: React.FC<LogsInnerProps> = forwardRef((props, ref) => {
         itemHeight={22}
         height={innerHieght}
         itemKey="uid"
-        className="content"
         styles={{
           verticalScrollBar: {
             width: 'var(--scrollbar-size)'
@@ -144,6 +118,6 @@ const LogsInner: React.FC<LogsInnerProps> = forwardRef((props, ref) => {
       </List>
     </div>
   );
-});
+};
 
 export default React.memo(LogsInner);

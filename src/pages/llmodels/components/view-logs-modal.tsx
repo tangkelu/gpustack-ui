@@ -35,7 +35,6 @@ const ViewCodeModal: React.FC<ViewModalProps> = (props) => {
 
   const updateHandler = (list: any) => {
     const data = list?.find((item: any) => item.data?.id === props.id);
-    // state in InstanceRealLogStatus will not enable scorll load, because it is in the trasisition state
     if (data) {
       setEnableScorllLoad(
         () => !InstanceRealLogStatus.includes(data?.data?.state)
@@ -51,8 +50,6 @@ const ViewCodeModal: React.FC<ViewModalProps> = (props) => {
         url: `${MODELS_API}/${props.modelId}/instances`,
         handler: updateHandler
       });
-    } else {
-      logsViewerRef.current?.abort();
     }
     return () => {
       requestRef.current?.current?.cancel?.();
@@ -85,19 +82,17 @@ const ViewCodeModal: React.FC<ViewModalProps> = (props) => {
       width={modalSize.width}
       footer={null}
     >
-      <div className="viewer-wrapper">
-        <LogsViewer
-          ref={logsViewerRef}
-          height={modalSize.height}
-          diffHeight={93}
-          url={url}
-          tail={tail}
-          enableScorllLoad={enableScorllLoad}
-          params={{
-            follow: true
-          }}
-        ></LogsViewer>
-      </div>
+      <LogsViewer
+        ref={logsViewerRef}
+        height={modalSize.height}
+        diffHeight={93}
+        url={url}
+        tail={tail}
+        enableScorllLoad={enableScorllLoad}
+        params={{
+          follow: true
+        }}
+      ></LogsViewer>
     </Modal>
   );
 };

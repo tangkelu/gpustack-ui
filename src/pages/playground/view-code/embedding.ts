@@ -10,7 +10,7 @@ export const generateEmbeddingCode = ({
   const curlCode = `
 curl ${host}${api} \\
 -H "Content-Type: application/json" \\
--H "Authorization: Bearer $\{YOUR_GPUSTACK_API_KEY}" \\
+-H "Authorization: Bearer $\{YOUR_GPUCluster_API_KEY}" \\
 ${formatCurlArgs(parameters, false)}`.trim();
 
   // ========================= Python =========================
@@ -18,7 +18,7 @@ ${formatCurlArgs(parameters, false)}`.trim();
 from openai import OpenAI\n
 client = OpenAI(
   base_url="${host}/v1-openai", 
-  api_key="YOUR_GPUSTACK_API_KEY"
+  api_key="YOUR_GPUCluster_API_KEY"
 )
 
 response = client.embeddings.create(\n${formatPyParams({ ...parameters })})\n
@@ -33,7 +33,7 @@ print(response.data[0].embedding)`.trim();
 const OpenAI = require("openai");
 
 const openai = new OpenAI({
-  "apiKey": "YOUR_GPUSTACK_API_KEY",
+  "apiKey": "YOUR_GPUCluster_API_KEY",
   "baseURL": "${host}/v1-openai"
 });
 

@@ -28,7 +28,7 @@ import React, {
   useState
 } from 'react';
 import { CREAT_IMAGE_API } from '../apis';
-import { extractErrorMessage, promptList } from '../config';
+import { promptList } from '../config';
 import {
   ImageAdvancedParamsConfig,
   ImageCustomSizeConfig,
@@ -60,8 +60,6 @@ const METAKEYS = [
   'negative_prompt'
 ];
 
-const ODD_STRING = 'AAAABJRU5ErkJgg===';
-
 const advancedFieldsDefaultValus = {
   seed: null,
   sample_method: 'euler_a',
@@ -69,8 +67,8 @@ const advancedFieldsDefaultValus = {
   guidance: 3.5,
   sampling_steps: 10,
   negative_prompt: null,
-  schedule_method: 'discrete',
-  preview: 'preview_faster'
+  schedule_method: 'default',
+  preview: null
 };
 
 const openaiCompatibleFieldsDefaultValus = {
@@ -137,14 +135,14 @@ const GroundImages: React.FC<MessageProps> = forwardRef((props, ref) => {
     };
   });
 
-  const removeBase64Suffix = (str: string, suffix: string) => {
-    return str.endsWith(suffix) ? str.slice(0, -suffix.length) : str;
-  };
-
-  const getNewImageSizeOptions = useCallback((metaData: any) => {
-    const { max_height, max_width } = metaData || {};
-    if (!max_height || !max_width) {
-      return imageSizeOptions;
+  const paramsConfig = useMemo(() => {
+    const { max_height, max_width } = modelMeta || {};
+    if (
+      !max_height ||
+      !max_width ||
+      (max_height === 1024 && max_width === 1024)
+    ) {
+      return ImageParamsConfig;
     }
     const newImageSizeOptions = imageSizeOptions.filter((item) => {
       return item.width <= max_width && item.height <= max_height;
@@ -161,12 +159,7 @@ const GroundImages: React.FC<MessageProps> = forwardRef((props, ref) => {
         value: `${max_width}x${max_height}`
       });
     }
-    return newImageSizeOptions;
-  }, []);
-
-  const paramsConfig = useMemo(() => {
-    const newImageSizeOptions = getNewImageSizeOptions(modelMeta);
-    let result: ParamsSchema[] = ImageParamsConfig.map((item: ParamsSchema) => {
+    return ImageParamsConfig.map((item) => {
       if (item.name === 'size') {
         return {
           ...item,
@@ -175,10 +168,6 @@ const GroundImages: React.FC<MessageProps> = forwardRef((props, ref) => {
       }
       return item;
     });
-    if (!newImageSizeOptions.length) {
-      result = result.filter((item) => item.name !== 'size');
-    }
-    return result;
   }, [modelMeta]);
 
   const generateNumber = (min: number, max: number) => {
@@ -186,7 +175,10 @@ const GroundImages: React.FC<MessageProps> = forwardRef((props, ref) => {
   };
 
   const updateCacheFormData = (values: Record<string, any>) => {
-    _.merge(cacheFormData.current, values);
+    cacheFormData.current = {
+      ...cacheFormData.current,
+      ...values
+    };
   };
 
   const handleRandomPrompt = useCallback(() => {
@@ -336,7 +328,8 @@ const GroundImages: React.FC<MessageProps> = forwardRef((props, ref) => {
       if (result.error) {
         setTokenResult({
           error: true,
-          errorMessage: extractErrorMessage(result)
+          errorMessage:
+            result?.data?.error?.message || result?.data?.error || ''
         });
         setImageList([]);
         return;
@@ -355,12 +348,11 @@ const GroundImages: React.FC<MessageProps> = forwardRef((props, ref) => {
         chunk?.data?.forEach((item: any) => {
           const imgItem = newImageList[item.index];
           if (item.b64_json && stream_options.chunk_results) {
-            imgItem.dataUrl += removeBase64Suffix(item.b64_json, ODD_STRING);
+            imgItem.dataUrl += item.b64_json;
           } else if (item.b64_json) {
-            imgItem.dataUrl = `data:image/png;base64,${removeBase64Suffix(item.b64_json, ODD_STRING)}`;
+            imgItem.dataUrl = `data:image/png;base64,${item.b64_json}`;
           }
-          const progress = item.progress;
-
+          const progress = _.round(item.progress, 0);
           newImageList[item.index] = {
             dataUrl: imgItem.dataUrl,
             height: imgSize[1],
@@ -533,19 +525,13 @@ const GroundImages: React.FC<MessageProps> = forwardRef((props, ref) => {
                   ? intl.formatMessage({ id: item.description.text })
                   : item.description?.text
               }
+              {...item.attrs}
               {..._.omit(item, [
                 'name',
                 'description',
                 'rules',
-                'disabledConfig',
-                'attrs'
+                'disabledConfig'
               ])}
-              {...item.attrs}
-              defaultValue={
-                item.name === 'height'
-                  ? modelMeta.default_height
-                  : modelMeta.default_width
-              }
               max={
                 item.name === 'height'
                   ? modelMeta.max_height || item.attrs?.max
@@ -566,33 +552,20 @@ const GroundImages: React.FC<MessageProps> = forwardRef((props, ref) => {
       const model = modelList.find((item) => item.value === val);
 
       setModelMeta(model?.meta || {});
-      const imageSizeOptions = getNewImageSizeOptions(model?.meta);
-      const w = model?.meta?.default_width || 512;
-      const h = model?.meta?.default_height || 512;
-      const defaultSize = imageSizeOptions.length ? `${w}x${h}` : 'custom';
+
       if (!isOpenaiCompatible) {
         setParams((pre: object) => {
-          const obj = _.merge({}, pre, _.pick(model?.meta, METAKEYS, {}));
-
           return {
-            ...obj,
-            size: defaultSize,
-            width: w,
-            height: h
+            ...pre,
+            ..._.pick(model?.meta, METAKEYS, {})
           };
         });
         form.current?.form?.setFieldsValue({
-          ..._.pick(model?.meta, METAKEYS, {}),
-          size: defaultSize,
-          width: w,
-          height: h
+          ..._.pick(model?.meta, METAKEYS, {})
         });
       }
       updateCacheFormData({
-        ..._.pick(model?.meta, METAKEYS, {}),
-        size: defaultSize,
-        width: w,
-        height: h
+        ..._.pick(model?.meta, METAKEYS, {})
       });
     },
     [modelList, isOpenaiCompatible]
@@ -607,14 +580,14 @@ const GroundImages: React.FC<MessageProps> = forwardRef((props, ref) => {
   useEffect(() => {
     if (size === 'custom') {
       form.current?.form?.setFieldsValue({
-        width: cacheFormData.current.width || 512,
-        height: cacheFormData.current.height || 512
+        width: 512,
+        height: 512
       });
       setParams((pre: object) => {
         return {
           ...pre,
-          width: cacheFormData.current.width || 512,
-          height: cacheFormData.current.height || 512
+          width: 512,
+          height: 512
         };
       });
     }

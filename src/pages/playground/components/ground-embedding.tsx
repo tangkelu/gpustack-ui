@@ -2,7 +2,6 @@ import AlertInfo from '@/components/alert-info';
 import ScatterChart from '@/components/echarts/scatter';
 import HighlightCode from '@/components/highlight-code';
 import IconFont from '@/components/icon-font';
-import SealInputNumber from '@/components/seal-form/input-number';
 import HotKeys, { KeyMap } from '@/config/hotkeys';
 import useOverlayScroller from '@/hooks/use-overlay-scroller';
 import useRequestToken from '@/hooks/use-request-token';
@@ -14,7 +13,7 @@ import {
   SendOutlined
 } from '@ant-design/icons';
 import { useIntl, useSearchParams } from '@umijs/max';
-import { Button, Checkbox, Form, Segmented, Spin, Tabs, Tooltip } from 'antd';
+import { Button, Checkbox, Segmented, Tabs, Tooltip } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import { PCA } from 'ml-pca';
@@ -86,8 +85,6 @@ const GroundEmbedding: React.FC<MessageProps> = forwardRef((props, ref) => {
   });
   const [lessTwoInput, setLessTwoInput] = useState<boolean>(false);
   const multiplePasteEnable = useRef<boolean>(true);
-  const selectionTextRef = useRef<any>(null);
-  const [metaData, setMetaData] = useState<Record<string, any>>({});
 
   const [textList, setTextList] = useState<
     { text: string; uid: number | string; name: string }[]
@@ -306,19 +303,6 @@ const GroundEmbedding: React.FC<MessageProps> = forwardRef((props, ref) => {
     setTextList(list);
   };
 
-  const handleonSelect = useCallback(
-    (data: {
-      start: number;
-      end: number;
-      beforeText: string;
-      afterText: string;
-      index: number;
-    }) => {
-      selectionTextRef.current = data;
-    },
-    []
-  );
-
   const handleOnPaste = useCallback(
     (e: any, index: number) => {
       if (!multiplePasteEnable.current) return;
@@ -332,7 +316,7 @@ const GroundEmbedding: React.FC<MessageProps> = forwardRef((props, ref) => {
             name: ''
           };
         });
-        dataLlist[0].text = `${selectionTextRef.current?.beforeText || ''}${dataLlist[0].text}${selectionTextRef.current?.afterText || ''}`;
+        dataLlist[0].text = currentContent + dataLlist[0].text;
         const result = [
           ...textList.slice(0, index),
           ...dataLlist,
@@ -376,14 +360,6 @@ const GroundEmbedding: React.FC<MessageProps> = forwardRef((props, ref) => {
 
   const handleOutputTypeChange = (value: string) => {
     setOutputType(value);
-  };
-
-  const handleModelChange = (value: string) => {
-    const model = modelList.find((item) => item.value === value);
-    if (model) {
-      console.log('model:', model);
-      setMetaData(model.meta || {});
-    }
   };
 
   const outputItems = useMemo(() => {
@@ -551,7 +527,6 @@ const GroundEmbedding: React.FC<MessageProps> = forwardRef((props, ref) => {
                 ref={inputListRef}
                 textList={textList}
                 onChange={handleTextListChange}
-                onSelect={handleonSelect}
                 onPaste={handleOnPaste}
               ></InputList>
               <div style={{ marginTop: 8 }}>
@@ -625,23 +600,6 @@ const GroundEmbedding: React.FC<MessageProps> = forwardRef((props, ref) => {
             ></Segmented>
           </h3>
           <div className="embed-chart">
-            {loading && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  zIndex: 10,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}
-              >
-                <Spin spinning={true}></Spin>
-              </div>
-            )}
             <Resizable
               ref={resizeRef}
               enable={{
@@ -706,25 +664,12 @@ const GroundEmbedding: React.FC<MessageProps> = forwardRef((props, ref) => {
         <div className="box">
           <DynamicParams
             ref={formRef}
-            onModelChange={handleModelChange}
             setParams={setParams}
             paramsConfig={paramsConfig}
             initialValues={initialValues}
             params={parameters}
             selectedModel={selectModel}
             modelList={modelList}
-            extra={
-              metaData?.n_ctx &&
-              metaData?.n_slot && (
-                <Form.Item>
-                  <SealInputNumber
-                    disabled
-                    label="Max Tokens"
-                    value={_.divide(metaData?.n_ctx, metaData?.n_slot)}
-                  ></SealInputNumber>
-                </Form.Item>
-              )
-            }
           />
         </div>
       </div>

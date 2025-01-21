@@ -13,7 +13,7 @@ export default {
   'models.form.configurations': 'Configurations',
   'models.form.s3address': 'S3 Address',
   'models.form.partialoffload.tips':
-    'After enabling CPU offloading, GPUStack prioritizes loading as many layers as possible onto the GPU to maximize performance. If GPU resources are limited, some layers will be offloaded to the CPU, with full CPU inference used only when no GPU is available.',
+    'After enabling CPU offloading, GPUCluster prioritizes loading as many layers as possible onto the GPU to maximize performance. If GPU resources are limited, some layers will be offloaded to the CPU, with full CPU inference used only when no GPU is available.',
   'models.form.distribution.tips':
     'Allows for offloading part of the computation to single or multiple remote workers when the resources of a single GPU or worker are insufficient.',
   'models.openinplayground': 'Open in Playground',
@@ -24,7 +24,7 @@ export default {
   'model.deploy.sort': 'Sort',
   'model.deploy.search.placeholder': 'Search models from {source}',
   'model.form.ollamatips':
-    'Tip: The following are the preconfigured Ollama models in GPUStack. Please select the model you want, or directly enter the model you wish to deploy in the 【{name}】 input box on the right.',
+    'Tip: The following are the preconfigured Ollama models in GPUCluster. Please select the model you want, or directly enter the model you wish to deploy in the 【{name}】 input box on the right.',
   'models.sort.name': 'Name',
   'models.sort.size': 'Size',
   'models.sort.likes': 'Likes',
@@ -60,11 +60,11 @@ export default {
   'models.form.backend': 'Backend',
   'models.form.backend_parameters': 'Backend Parameters',
   'models.search.gguf.tips':
-    'GGUF models use llama-box(supports Linux, macOS and Windows).',
+    '1. GGUF models use llama-box(supports Linux, macOS and Windows).',
   'models.search.vllm.tips':
-    'Non-GGUF models use vox-box for audio and vLLM(x86 Linux only) for others.',
+    '2. Non-GGUF models use vox-box for audio and vLLM(x86 Linux only) for others.',
   'models.search.voxbox.tips':
-    'To deploy an audio model, uncheck the GGUF checkbox.',
+    '3. To deploy an audio model, uncheck the GGUF checkbox.',
   'models.form.ollamalink': 'Find More in Ollama Library',
   'models.form.backend_parameters.llamabox.placeholder':
     'e.g., --ctx-size=8192',
@@ -74,31 +74,18 @@ export default {
     'More {backend} parameter details',
   'models.logs.pagination.prev': 'Previous {lines} Lines',
   'models.logs.pagination.next': 'Next {lines} Lines',
-  'models.logs.pagination.last': 'Last Page',
-  'models.logs.pagination.first': 'First Page',
   'models.form.localPath': 'Local Path',
   'models.form.filePath': 'Model Path',
   'models.form.backendVersion': 'Backend Version',
   'models.form.backendVersion.tips':
-    'Pin a specific version to keep the backend stable across GPUStack upgrades.',
+    'Pin a specific version to keep the backend stable across GPUCluster upgrades.',
   'models.form.gpuselector': 'GPU Selector',
   'models.form.backend.llamabox':
-    'For GGUF format models, supports Linux, macOS, and Windows.',
+    'llama-box: For GGUF format models, supports Linux, macOS, and Windows.',
   'models.form.backend.vllm':
-    'For non-GGUF format models, supports x86 Linux only.',
-  'models.form.backend.voxbox': 'For non-GGUF format audio models.',
+    'vLLM: For non-GGUF format models, supports x86 Linux only.',
+  'models.form.backend.voxbox': 'vox-box: For non-GGUF format audio models.',
   'models.form.search.gguftips':
     'If using macOS or Windows as a worker, check GGUF (uncheck for audio models).',
-  'models.form.button.addlabel': 'Add Label',
-  'models.filter.category': 'Filter by category',
-  'models.list.more.logs': 'View More',
-  'models.catalog.release.date': 'Release Date',
-  'models.localpath.gguf.tips.title': 'GGUF format model',
-  'models.localpat.safe.tips.title': 'Safetensors format model',
-  'models.localpath.shared.tips.title': 'Sharded model',
-  'models.localpath.gguf.tips':
-    ' Specify the model file, e.g., /usr/local/models/model.gguf.',
-  'models.localpath.safe.tips':
-    'Specify the model directory, e.g., /usr/local/models/.',
-  'models.localpath.chunks.tips': `Specify one of the model's shard files, e.g., /usr/local/models/model-00001-of-00004.(gguf|safetensors).`
+  'models.form.button.addlabel': 'Add Label'
 };

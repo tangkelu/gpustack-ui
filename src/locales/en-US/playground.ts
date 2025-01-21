@@ -85,7 +85,7 @@ export default {
     'Upload an audio file or start recording',
   'playground.audio.enablemic':
     "Enable microphone access in your browser's settings.",
-  'playground.audio.enablemic.doc': 'Refer to this link',
+  'playground.audio.enablemic.doc': 'Refer to',
   'playground.audio.startrecord': 'Start Recording',
   'playground.audio.stoprecord': 'Stop Recording',
   'playground.audio.generating.tips': 'Generated text will appear here.',
@@ -122,7 +122,7 @@ export default {
   'playgorund.audio.voice.error':
     'Voices are unavailable. The model may still be initializing. Please refresh after a brief wait.',
   'playground.params.size.description':
-    'The maximum size of the generated image is controlled by the deployment parameters of the model. <a href="https://github.com/gpustack/llama-box" target="_blank">Refer to</a>',
+    'The maximum size of the generated image is controlled by the deployment parameters of the model. <a href="https://github.com/GPUCluster/llama-box" target="_blank">Refer to</a>',
   'playground.documents.verify.embedding': 'At least add two pieces of text.',
   'playground.documents.verify.rerank': 'The documents cannot be empty.',
   'playground.image.guidance.tip':
@@ -133,10 +133,6 @@ export default {
     'The higher the value, the greater the modification to the original image.',
   'playground.image.edit.tips': 'Click or drag image to this area to upload',
   'playground.image.saveMask': 'Save Mask',
-  'playground.image.negativeMask': 'Negative Mask',
   'playground.image.brushSize': 'Brush Size',
-  'playground.image.download': 'Download Image',
-  'playground.image.generate': 'Generate',
-  'playground.image.edit': 'Edit',
-  'playground.image.fitview': 'Fit View'
+  'playground.image.download': 'Download Image'
 };

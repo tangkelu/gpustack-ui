@@ -25,7 +25,6 @@ import {
   useState
 } from 'react';
 import { speechToText } from '../apis';
-import { SpeechToTextFormat } from '../config';
 import { RealtimeParamsConfig as paramsConfig } from '../config/params-config';
 import '../style/ground-left.less';
 import '../style/speech-to-text.less';
@@ -307,7 +306,7 @@ const GroundLeft: React.FC<MessageProps> = forwardRef((props, ref) => {
               {!isRecording && (
                 <UploadAudio
                   type="default"
-                  accept={SpeechToTextFormat.join(',')}
+                  accept=".mp3,.mp4,.wav"
                   onChange={handleUploadChange}
                 ></UploadAudio>
               )}
@@ -412,8 +411,7 @@ const GroundLeft: React.FC<MessageProps> = forwardRef((props, ref) => {
                       padding: '8px 14px',
                       lineHeight: '20px',
                       display: 'flex',
-                      justifyContent: 'center',
-                      wordBreak: 'break-word'
+                      justifyContent: 'center'
                     }}
                   >
                     {messageList.length ? (

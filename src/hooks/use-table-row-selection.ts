@@ -11,23 +11,14 @@ export default function useTableRowSelection() {
     setSelectedRowKeys([]);
   };
 
-  const removeSelectedKey = (rowKey: React.Key | React.Key[]) => {
-    if (Array.isArray(rowKey)) {
-      setSelectedRowKeys((keys) => keys.filter((key) => !rowKey.includes(key)));
-      return;
-    }
+  const removeSelectedKey = (rowKey: React.Key) => {
     setSelectedRowKeys((keys) => keys.filter((key) => key !== rowKey));
-  };
-
-  const removeSelectedKeys = (rowKeys: React.Key[]) => {
-    setSelectedRowKeys((keys) => keys.filter((key) => !rowKeys.includes(key)));
   };
 
   const rowSelection = {
     selectedRowKeys,
     clearSelections,
     onChange: onSelectChange,
-    removeSelectedKeys,
     removeSelectedKey
   };
 

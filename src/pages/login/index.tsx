@@ -29,7 +29,7 @@ const Login = () => {
     gotoDefaultPage(userInfo);
   }, [userInfo]);
   useEffect(() => {
-    document.title = 'GPUStack';
+    document.title = 'GPUCluster';
   }, []);
 
   return (

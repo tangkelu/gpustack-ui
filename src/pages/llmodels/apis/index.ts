@@ -3,8 +3,6 @@ import { PipelineType } from '@huggingface/tasks';
 import { request } from '@umijs/max';
 import qs from 'query-string';
 import {
-  CatalogItem,
-  CatalogSpec,
   FormData,
   GPUListItem,
   ListItem,
@@ -21,31 +19,15 @@ const setProxyUrl = (url: string) => {
 };
 
 // ===================== Models =====================
-
-export async function queryModelsInstances(
-  params: Global.SearchParams,
-  options?: any
-) {
-  return request<Global.PageResponse<ModelInstanceListItem>>(
-    MODEL_INSTANCE_API,
-    {
-      params,
-      method: 'GET',
-      cancelToken: options?.token
-    }
-  );
-}
 export async function queryModelsList(
   params: Global.SearchParams,
   options?: any
 ) {
-  return request<Global.PageResponse<ListItem>>(
-    `${MODELS_API}?${qs.stringify(params)}`,
-    {
-      methos: 'GET',
-      ...options
-    }
-  );
+  return request<Global.PageResponse<ListItem>>(`${MODELS_API}`, {
+    methos: 'GET',
+    ...options,
+    params
+  });
 }
 
 export async function queryGPUList() {
@@ -83,15 +65,13 @@ export async function queryModelDetail(id: number) {
 // ===================== Model Instances start =====================
 
 export async function queryModelInstancesList(
-  params: Global.Pagination & { query?: string; id: number },
-  options?: any
+  params: Global.Pagination & { query?: string; id: number }
 ) {
   return request<Global.PageResponse<ModelInstanceListItem>>(
     `${MODELS_API}/${params.id}/instances`,
     {
       method: 'GET',
-      params,
-      cancelToken: options?.token
+      params
     }
   );
 }
@@ -167,7 +147,7 @@ export async function queryModelScopeModels(
   config?: any
 ) {
   const tagsCriterion = params.tags?.map((tag: string) => {
-    return { category: 'libraries', predicate: 'contains', values: [tag] };
+    return { category: 'tags', predicate: 'contains', values: [tag] };
   });
   const tasksCriterion = params.tasks?.map((task: string) => {
     return { category: 'tasks', predicate: 'contains', values: [task] };
@@ -333,33 +313,4 @@ export async function downloadModelScopeModelfile(
     throw new Error('Network response was not ok');
   }
   return res.json();
-}
-
-// ===================== catalog =====================
-
-export async function queryCatalogList(
-  params: Global.SearchParams,
-  options?: any
-) {
-  return request<Global.PageResponse<CatalogItem>>(
-    `/model-sets?${qs.stringify(params)}`,
-    {
-      methos: 'GET',
-      ...options
-    }
-  );
-}
-
-export async function queryCatalogItemSpec(
-  params: { id: number },
-  options?: any
-) {
-  return await request<Global.PageResponse<CatalogSpec>>(
-    `/model-sets/${params.id}/specs`,
-    {
-      method: 'GET',
-      ...options,
-      params
-    }
-  );
 }

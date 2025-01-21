@@ -1,4 +1,3 @@
-import { modelsExpandKeysAtom } from '@/atoms/models';
 import AutoTooltip from '@/components/auto-tooltip';
 import DeleteModal from '@/components/delete-modal';
 import DropdownButtons from '@/components/drop-down-buttons';
@@ -24,16 +23,14 @@ import {
   EditOutlined,
   ExperimentOutlined,
   PictureOutlined,
-  SyncOutlined,
-  WechatWorkOutlined
+  SyncOutlined
 } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { Access, useAccess, useIntl, useNavigate } from '@umijs/max';
-import { Button, Dropdown, Input, Select, Space, Tag, message } from 'antd';
+import { Button, Dropdown, Input, Space, Tag, message } from 'antd';
 import dayjs from 'dayjs';
-import { useAtom } from 'jotai';
 import _ from 'lodash';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import {
   MODELS_API,
@@ -47,7 +44,6 @@ import {
 import {
   InstanceRealLogStatus,
   getSourceRepoConfigValue,
-  modelCategories,
   modelCategoriesMap,
   modelSourceMap
 } from '../config';
@@ -58,21 +54,18 @@ import UpdateModel from './update-modal';
 import ViewLogsModal from './view-logs-modal';
 
 interface ModelsProps {
-  handleSearch: () => void;
+  handleSearch: (e: any) => void;
   handleNameChange: (e: any) => void;
   handleShowSizeChange?: (page: number, size: number) => void;
   handlePageChange: (page: number, pageSize: number | undefined) => void;
   handleDeleteSuccess: () => void;
-  handleCategoryChange: (val: any) => void;
   onViewLogs: () => void;
   onCancelViewLogs: () => void;
   queryParams: {
     page: number;
     perPage: number;
     query?: string;
-    categories?: string[];
   };
-  deleteIds?: number[];
   gpuDeviceList: GPUDeviceItem[];
   workerList: WorkerListItem[];
   dataSource: ListItem[];
@@ -118,8 +111,6 @@ const Models: React.FC<ModelsProps> = ({
   handleDeleteSuccess,
   onViewLogs,
   onCancelViewLogs,
-  handleCategoryChange,
-  deleteIds,
   dataSource,
   gpuDeviceList,
   workerList,
@@ -127,7 +118,6 @@ const Models: React.FC<ModelsProps> = ({
   loading,
   total
 }) => {
-  const [expandAtom, setExpandAtom] = useAtom(modelsExpandKeysAtom);
   const access = useAccess();
   const intl = useIntl();
   const navigate = useNavigate();
@@ -137,7 +127,7 @@ const Models: React.FC<ModelsProps> = ({
     updateExpandedRowKeys,
     removeExpandedRowKey,
     expandedRowKeys
-  } = useExpandedRowKeys(expandAtom);
+  } = useExpandedRowKeys();
   const { sortOrder, setSortOrder } = useTableSort({
     defaultSortOrder: 'descend'
   });
@@ -221,48 +211,62 @@ const Models: React.FC<ModelsProps> = ({
     }
   );
 
-  useEffect(() => {
-    if (deleteIds?.length) {
-      rowSelection.removeSelectedKey(deleteIds);
-    }
-  }, [deleteIds]);
-
-  useEffect(() => {
-    return () => {
-      setExpandAtom([]);
-    };
-  }, []);
-
   const sourceOptions = [
-    {
-      label: intl.formatMessage({ id: 'menu.models.modelCatalog' }),
-      value: 'catalog',
-      key: 'catalog',
-      icon: <IconFont type="icon-catalog"></IconFont>
-    },
     {
       label: 'Hugging Face',
       value: modelSourceMap.huggingface_value,
       key: 'huggingface',
-      icon: <IconFont type="icon-huggingface"></IconFont>
+      icon: <IconFont type="icon-huggingface"></IconFont>,
+      onClick: (e: any) => {
+        setOpenDeployModal({
+          show: true,
+          width: 'calc(100vw - 220px)',
+          source: modelSourceMap.huggingface_value
+        });
+      }
     },
     {
       label: 'Ollama Library',
       value: modelSourceMap.ollama_library_value,
       key: 'ollama_library',
-      icon: <IconFont type="icon-ollama"></IconFont>
+      icon: <IconFont type="icon-ollama"></IconFont>,
+      onClick: (e: any) => {
+        setOpenDeployModal(() => {
+          return {
+            show: true,
+            width: 600,
+            source: modelSourceMap.ollama_library_value
+          };
+        });
+      }
     },
     {
       label: 'ModelScope',
       value: modelSourceMap.modelscope_value,
       key: 'modelscope',
-      icon: <IconFont type="icon-tu2"></IconFont>
+      icon: <IconFont type="icon-tu2"></IconFont>,
+      onClick: (e: any) => {
+        setOpenDeployModal({
+          show: true,
+          width: 'calc(100vw - 220px)',
+          source: modelSourceMap.modelscope_value
+        });
+      }
     },
     {
       label: intl.formatMessage({ id: 'models.form.localPath' }),
       value: modelSourceMap.local_path_value,
       key: 'local_path',
-      icon: <IconFont type="icon-hard-disk"></IconFont>
+      icon: <IconFont type="icon-hard-disk"></IconFont>,
+      onClick: (e: any) => {
+        setOpenDeployModal(() => {
+          return {
+            show: true,
+            width: 600,
+            source: modelSourceMap.local_path_value
+          };
+        });
+      }
     }
   ];
 
@@ -318,7 +322,6 @@ const Models: React.FC<ModelsProps> = ({
         }
       });
       message.success(intl.formatMessage({ id: 'common.message.success' }));
-      updateExpandedRowKeys([row.id, ...expandedRowKeys]);
     } catch (error) {
       // ingore
     }
@@ -339,7 +342,6 @@ const Models: React.FC<ModelsProps> = ({
           replicas: 0
         }
       });
-      removeExpandedRowKey([row.id]);
     } catch (error) {
       // ingore
     }
@@ -348,6 +350,7 @@ const Models: React.FC<ModelsProps> = ({
   const handleModalOk = useCallback(
     async (data: FormData) => {
       try {
+        console.log('data:', data, openDeployModal);
         const result = getSourceRepoConfigValue(currentData?.source, data);
         await updateModel({
           data: {
@@ -358,7 +361,6 @@ const Models: React.FC<ModelsProps> = ({
         });
         setOpenAddModal(false);
         message.success(intl.formatMessage({ id: 'common.message.success' }));
-        handleSearch();
       } catch (error) {}
     },
     [currentData]
@@ -396,7 +398,6 @@ const Models: React.FC<ModelsProps> = ({
           updateExpandedRowKeys([modelData.id, ...expandedRowKeys]);
         }, 300);
         message.success(intl.formatMessage({ id: 'common.message.success' }));
-        handleSearch?.();
       } catch (error) {}
     },
     [openDeployModal]
@@ -417,7 +418,6 @@ const Models: React.FC<ModelsProps> = ({
         removeExpandedRowKey([row.id]);
         rowSelection.removeSelectedKey(row.id);
         handleDeleteSuccess();
-        handleSearch();
       }
     });
   };
@@ -432,7 +432,6 @@ const Models: React.FC<ModelsProps> = ({
         rowSelection.clearSelections();
         removeExpandedRowKey(rowSelection.selectedRowKeys);
         handleDeleteSuccess();
-        handleSearch();
       }
     });
   };
@@ -494,15 +493,13 @@ const Models: React.FC<ModelsProps> = ({
     [deleteModelInstance]
   );
 
-  const getModelInstances = async (row: any, options?: any) => {
+  const getModelInstances = async (row: any) => {
     const params = {
       id: row.id,
       page: 1,
       perPage: 100
     };
-    const data = await queryModelInstancesList(params, {
-      token: options?.token
-    });
+    const data = await queryModelInstancesList(params);
     return data.items || [];
   };
 
@@ -646,35 +643,17 @@ const Models: React.FC<ModelsProps> = ({
           </Tag>
         );
       }
-      if (record.categories?.includes(modelCategoriesMap.llm)) {
-        return (
-          <Tag
-            icon={<WechatWorkOutlined />}
-            style={{
-              margin: 0,
-              opacity: 1,
-              paddingInline: 8,
-              borderRadius: 12,
-              transform: 'scale(0.9)'
-            }}
-            color="green"
-          >
-            LLM
-          </Tag>
-        );
-      }
       return null;
     },
     [intl]
   );
-
   const renderChildren = useCallback(
     (list: any, parent?: any) => {
       return (
         <InstanceItem
           list={list}
           modelData={parent}
-          gpuDeviceList={[]}
+          gpuDeviceList={gpuDeviceList}
           workerList={workerList}
           handleChildSelect={handleChildSelect}
         ></InstanceItem>
@@ -699,50 +678,12 @@ const Models: React.FC<ModelsProps> = ({
     return '';
   }, []);
 
-  const handleClickDropdown = (item: any) => {
-    if (item.key === 'huggingface') {
-      setOpenDeployModal({
-        show: true,
-        width: 'calc(100vw - 220px)',
-        source: modelSourceMap.huggingface_value
-      });
-    }
-
-    if (item.key === 'ollama_library') {
-      setOpenDeployModal({
-        show: true,
-        width: 600,
-        source: modelSourceMap.ollama_library_value
-      });
-    }
-
-    if (item.key === 'modelscope') {
-      setOpenDeployModal({
-        show: true,
-        width: 'calc(100vw - 220px)',
-        source: modelSourceMap.modelscope_value
-      });
-    }
-
-    if (item.key === 'local_path') {
-      setOpenDeployModal({
-        show: true,
-        width: 600,
-        source: modelSourceMap.local_path_value
-      });
-    }
-    if (item.key === 'catalog') {
-      navigate('/models/catalog');
-    }
-  };
-
   return (
     <>
       <PageContainer
         ghost
         header={{
-          title: intl.formatMessage({ id: 'models.title' }),
-          breadcrumb: {}
+          title: intl.formatMessage({ id: 'models.title' })
         }}
         extra={[]}
       >
@@ -752,24 +693,11 @@ const Models: React.FC<ModelsProps> = ({
             <Space>
               <Input
                 placeholder={intl.formatMessage({ id: 'common.filter.name' })}
-                style={{ width: 230 }}
+                style={{ width: 300 }}
                 size="large"
                 allowClear
                 onChange={handleNameChange}
               ></Input>
-              <Select
-                allowClear
-                showSearch={false}
-                placeholder={intl.formatMessage({
-                  id: 'models.filter.category'
-                })}
-                style={{ width: 230 }}
-                size="large"
-                mode="multiple"
-                maxTagCount={1}
-                onChange={handleCategoryChange}
-                options={modelCategories.filter((item) => item.value)}
-              ></Select>
               <Button
                 type="text"
                 style={{ color: 'var(--ant-color-text-tertiary)' }}
@@ -780,13 +708,7 @@ const Models: React.FC<ModelsProps> = ({
           }
           right={
             <Space size={20}>
-              <Dropdown
-                menu={{
-                  items: sourceOptions,
-                  onClick: handleClickDropdown
-                }}
-                placement="bottomRight"
-              >
+              <Dropdown menu={{ items: sourceOptions }} placement="bottomRight">
                 <Button
                   icon={<DownOutlined></DownOutlined>}
                   type="primary"
@@ -935,6 +857,7 @@ const Models: React.FC<ModelsProps> = ({
         open={openDeployModal.show}
         action={PageAction.CREATE}
         title={intl.formatMessage({ id: 'models.button.deploy' })}
+        data={currentData}
         source={openDeployModal.source}
         width={openDeployModal.width}
         onCancel={handleDeployModalCancel}

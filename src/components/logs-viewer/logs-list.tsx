@@ -14,13 +14,12 @@ import './styles/logs-list.less';
 interface LogsListProps {
   dataList: any[];
   height?: number;
-  onScroll?: (data: { isTop: boolean; isBottom: boolean }) => void;
+  onScroll?: (isTop: boolean) => void;
   diffHeight?: number;
-  showNum?: boolean;
   ref?: any;
 }
 const LogsList: React.FC<LogsListProps> = forwardRef((props, ref) => {
-  const { dataList, height, showNum, onScroll, diffHeight = 96 } = props;
+  const { dataList, height, onScroll, diffHeight = 96 } = props;
   const {
     initialize,
     updateScrollerPosition,
@@ -30,9 +29,7 @@ const LogsList: React.FC<LogsListProps> = forwardRef((props, ref) => {
     instance,
     initialized
   } = useOverlayScroller({
-    options: {
-      theme: 'os-theme-light'
-    }
+    theme: 'os-theme-light'
   });
   const viewportHeight = window.innerHeight;
   const viewHeight = viewportHeight - diffHeight;
@@ -56,8 +53,7 @@ const LogsList: React.FC<LogsListProps> = forwardRef((props, ref) => {
 
   useImperativeHandle(ref, () => ({
     scrollToBottom,
-    scrollToTop,
-    scroller: scroller.current
+    scrollToTop
   }));
 
   const handleOnWheel = useCallback(
@@ -65,28 +61,15 @@ const LogsList: React.FC<LogsListProps> = forwardRef((props, ref) => {
       const scrollTop = scrollEventElement?.scrollTop;
       const scrollHeight = scrollEventElement?.scrollHeight;
       const clientHeight = scrollEventElement?.clientHeight;
-
+      // is scroll to bottom
       stopScroll.current = scrollTop + clientHeight <= scrollHeight;
-
-      const isBottom = scrollTop + clientHeight + 150 >= scrollHeight;
       // is scroll to top
       if (scrollTop === 0) {
-        onScroll?.({
-          isTop: true,
-          isBottom: false
-        });
-      } else if (isBottom) {
-        onScroll?.({
-          isTop: false,
-          isBottom: true
-        });
-        stopScroll.current = false;
+        onScroll?.(true);
       } else {
-        onScroll?.({
-          isTop: false,
-          isBottom: false
-        });
+        onScroll?.(false);
       }
+      debounceResetStopScroll();
     },
     [debounceResetStopScroll, scrollEventElement]
   );
@@ -139,7 +122,7 @@ const LogsList: React.FC<LogsListProps> = forwardRef((props, ref) => {
       <div className={classNames('content')}>
         {_.map(dataList, (item: any, index: number) => {
           return (
-            <div key={item.uid} className={classNames('text')}>
+            <div key={item.uid} className="text">
               {item.content}
             </div>
           );

@@ -11,6 +11,7 @@ import React, {
   useRef,
   useState
 } from 'react';
+import { controlSeqRegex, replaceLineRegex } from './config';
 import LogsList from './logs-list';
 import LogsPagination from './logs-pagination';
 import './styles/index.less';
@@ -32,115 +33,131 @@ const LogsViewer: React.FC<LogsViewerProps> = forwardRef((props, ref) => {
     useLogsPagination();
   const { setChunkFetch } = useSetChunkFetch();
   const chunkRequedtRef = useRef<any>(null);
+  const cacheDataRef = useRef<any>('');
   const [logs, setLogs] = useState<any[]>([]);
   const logParseWorker = useRef<any>(null);
-  const tail = useRef<any>(pageSize - 1);
+  const tail = useRef<any>(defaultTail);
+  const [isLoadend, setIsLoadend] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isAtTop, setIsAtTop] = useState(false);
   const [scrollPos, setScrollPos] = useState<any[]>([]);
   const logListRef = useRef<any>(null);
-  const loadMoreDone = useRef(false);
-  const pageRef = useRef<any>(page);
-  const totalPageRef = useRef<any>(totalPage);
-  const isLoadingMoreRef = useRef(false);
-  const [currentData, setCurrentData] = useState<any[]>([]);
-  const scrollPosRef = useRef<any>({
-    pos: 'bottom',
-    page: 1
-  });
-  const lineCountRef = useRef(0);
-  const clearScreen = useRef(false);
 
   useImperativeHandle(ref, () => ({
     abort() {
       chunkRequedtRef.current?.current?.abort?.();
-      logParseWorker.current?.terminate?.();
     }
   }));
 
+  useEffect(() => {
+    logParseWorker.current?.terminate?.();
+
+    logParseWorker.current = new Worker(
+      // @ts-ignore
+      new URL('./parse-worker.ts', import.meta.url),
+      {
+        type: 'module'
+      }
+    );
+
+    logParseWorker.current.onmessage = (event: any) => {
+      const res = event.data;
+      setLogs(res);
+    };
+
+    return () => {
+      if (logParseWorker.current) {
+        logParseWorker.current.terminate();
+      }
+    };
+  }, [setLogs, logParseWorker.current]);
+
   const debounceLoading = _.debounce(() => {
     setLoading(false);
-    isLoadingMoreRef.current = false;
-    if (logListRef.current?.scroller) {
-      logListRef.current.scroller.style['pointer-events'] = 'auto';
-    }
-  }, 1000);
+  }, 200);
 
-  const getCurrent = useCallback(() => {
-    if (pageRef.current < 1) {
-      pageRef.current = 1;
-    }
-    const start = (pageRef.current - 1) * pageSize;
-    const end = pageRef.current * pageSize;
-    const currentLogs = logs.slice(start, end);
-    setPage(pageRef.current);
-    setCurrentData(currentLogs);
-  }, [logs, pageSize]);
+  const isClean = useCallback((input: string) => {
+    let match = controlSeqRegex.exec(input) || [];
+    const command = match?.[3];
+    const n = parseInt(match?.[1], 10) || 1;
+    return command === 'J' && n === 2;
+  }, []);
+
+  const getLastPage = useCallback(
+    (data: string) => {
+      const list = _.split(data.trim(), '\n');
+      if (!enableScorllLoad) {
+        return list.join('\n');
+      }
+
+      if (list.length <= pageSize) {
+        setTotalPage(1);
+        return data;
+      }
+
+      setLoading(true);
+      const totalPage = Math.ceil(list.length / pageSize);
+      setTotalPage(totalPage);
+      setPage(totalPage);
+      const lastPage = list.slice(-pageSize).join('\n');
+      debounceLoading();
+      return lastPage;
+    },
+    [pageSize, setTotalPage, setPage, debounceLoading, enableScorllLoad]
+  );
 
   const getPrePage = useCallback(() => {
-    pageRef.current = pageRef.current - 1;
-
-    getCurrent();
-
-    setScrollPos(['bottom', pageRef.current]);
-    scrollPosRef.current = {
-      pos: 'bottom',
-      page: pageRef.current
-    };
-  }, [getCurrent]);
+    const list = _.split(cacheDataRef.current.trim(), '\n');
+    let newPage = page - 1;
+    if (newPage < 1) {
+      newPage = 1;
+    }
+    const start = (newPage - 1) * pageSize;
+    const end = newPage * pageSize;
+    const prePage = list.slice(start, end).join('\n');
+    setPage(newPage);
+    setScrollPos(['bottom', newPage]);
+    logParseWorker.current.postMessage({
+      inputStr: prePage
+    });
+  }, [page, pageSize]);
 
   const getNextPage = useCallback(() => {
-    pageRef.current = pageRef.current + 1;
-
-    getCurrent();
-
-    setScrollPos(['top', pageRef.current]);
-    scrollPosRef.current = {
-      pos: 'top',
-      page: pageRef.current
-    };
-  }, [getCurrent]);
-
-  const handleonBackend = useCallback(() => {
-    pageRef.current = totalPageRef.current;
-    getCurrent();
-
-    console.log('pageRef.current', pageRef.current);
-    setScrollPos(['bottom', pageRef.current]);
-    scrollPosRef.current = {
-      pos: 'bottom',
-      page: pageRef.current
-    };
-  }, [getCurrent]);
-
-  const handleonToFirst = useCallback(() => {
-    pageRef.current = 1;
-    getCurrent();
-    console.log('pageRef.current', pageRef.current);
-    setScrollPos(['top', pageRef.current]);
-    scrollPosRef.current = {
-      pos: 'top',
-      page: pageRef.current
-    };
-  }, [getCurrent]);
-
-  const updateContent = (data: string) => {
-    if (isLoadingMoreRef.current) {
-      setLoading(true);
-      if (logListRef.current?.scroller) {
-        logListRef.current.scroller.style['pointer-events'] = 'none';
-      }
+    const list = _.split(cacheDataRef.current.trim(), '\n');
+    let newPage = page + 1;
+    if (newPage > totalPage) {
+      newPage = totalPage;
     }
+    const start = (newPage - 1) * pageSize;
+    const end = newPage * pageSize;
+    const nextPage = list.slice(start, end).join('\n');
+    setPage(newPage);
+    setScrollPos(['top', newPage]);
     logParseWorker.current.postMessage({
-      inputStr: data,
-      reset: clearScreen.current
+      inputStr: nextPage
     });
-    clearScreen.current = false;
-  };
+  }, [totalPage, page, pageSize]);
+
+  const updateContent = useCallback(
+    (inputStr: string) => {
+      console.log('inputStr===', inputStr);
+      const data = inputStr.replace(replaceLineRegex, '\n');
+      if (isClean(data)) {
+        cacheDataRef.current = data;
+      } else {
+        cacheDataRef.current += data;
+      }
+
+      logParseWorker.current.postMessage({
+        inputStr: getLastPage(cacheDataRef.current)
+      });
+    },
+    [getLastPage]
+  );
 
   const createChunkConnection = async () => {
+    cacheDataRef.current = '';
     chunkRequedtRef.current?.current?.abort?.();
-
     chunkRequedtRef.current = setChunkFetch({
       url,
       params: {
@@ -154,72 +171,26 @@ const LogsViewer: React.FC<LogsViewerProps> = forwardRef((props, ref) => {
   };
 
   const handleOnScroll = useCallback(
-    async (data: { isTop: boolean; isBottom: boolean }) => {
-      const { isTop, isBottom } = data;
+    async (isTop: boolean) => {
       setIsAtTop(isTop);
-      console.log('scroll========', {
-        isTop,
-        isBottom,
-        loadMoreDone: loadMoreDone.current,
-        loading: loading,
-        lineCount: lineCountRef.current
-      });
-      if (isBottom) {
-        scrollPosRef.current = {
-          pos: 'bottom',
-          page: page
-        };
-      } else if (isTop) {
-        scrollPosRef.current = {
-          pos: 'top',
-          page: page
-        };
-      } else {
-        scrollPosRef.current = {
-          pos: 'middle',
-          page: page
-        };
-      }
-      if (
-        loading ||
-        (logs.length > 0 &&
-          lineCountRef.current < pageSize - 1 &&
-          !loadMoreDone.current) ||
-        !enableScorllLoad
-      ) {
+      if (loading || isLoadend || logs.length < pageSize || !enableScorllLoad) {
         return;
       }
-
-      if (isTop && !loadMoreDone.current) {
+      if (isTop && !isLoadend) {
         tail.current = undefined;
         createChunkConnection();
-        loadMoreDone.current = true;
-        isLoadingMoreRef.current = true;
-        clearScreen.current = true;
-      } else if (isTop && page <= totalPage && page > 1) {
-        // getPrePage();
-      } else if (isBottom && page < totalPage) {
-        // getNextPage();
+        setIsLoadend(true);
       }
     },
-    [
-      loading,
-      logs.length,
-      pageSize,
-      enableScorllLoad,
-      page,
-      totalPage,
-      setScrollPos,
-      createChunkConnection
-    ]
+    [loading, isLoadend, logs.length, pageSize, enableScorllLoad]
   );
 
   const debouncedScroll = useCallback(
-    _.throttle(() => {
-      if (scrollPos[0] === 'top' && scrollPosRef.current.pos === 'top') {
+    _.debounce(() => {
+      if (scrollPos[0] === 'top') {
         logListRef.current?.scrollToTop();
       }
-      if (scrollPosRef.current.pos === 'bottom') {
+      if (scrollPos[0] === 'bottom') {
         logListRef.current?.scrollToBottom();
       }
     }, 150),
@@ -237,76 +208,21 @@ const LogsViewer: React.FC<LogsViewerProps> = forwardRef((props, ref) => {
     debouncedScroll();
   }, [scrollPos]);
 
-  useEffect(() => {
-    logParseWorker.current?.terminate?.();
-
-    logParseWorker.current = new Worker(
-      // @ts-ignore
-      new URL('./parse-worker.ts', import.meta.url),
-      {
-        type: 'module'
-      }
-    );
-
-    logParseWorker.current.onmessage = (event: any) => {
-      const { result, lines } = event.data;
-      lineCountRef.current = lines;
-
-      if (pageRef.current < 1) {
-        pageRef.current = 1;
-      }
-
-      const oldTotalPage = totalPageRef.current;
-
-      totalPageRef.current = Math.ceil(result.length / pageSize);
-
-      if (isLoadingMoreRef.current) {
-        pageRef.current = totalPageRef.current;
-      } else if (
-        pageRef.current === oldTotalPage &&
-        scrollPosRef.current.pos === 'bottom'
-      ) {
-        scrollPosRef.current = {
-          pos: 'bottom',
-          page: pageRef.current
-        };
-        pageRef.current = totalPageRef.current;
-        setScrollPos(['bottom', pageRef.current]);
-      }
-
-      const start = (pageRef.current - 1) * pageSize;
-      const end = pageRef.current * pageSize;
-      const currentLogs = result.slice(start, end);
-
-      setLogs(result);
-      setTotalPage(totalPageRef.current);
-      setPage(pageRef.current);
-      setCurrentData(currentLogs);
-      debounceLoading();
-    };
-
-    return () => {
-      if (logParseWorker.current) {
-        logParseWorker.current.terminate();
-      }
-    };
-  }, []);
-
   return (
     <div className="logs-viewer-wrap-w2">
       <div className="wrap">
-        <div>
+        <div className={classNames('content')}>
           <LogsList
             ref={logListRef}
-            dataList={currentData}
+            dataList={logs}
             diffHeight={diffHeight}
             onScroll={handleOnScroll}
           ></LogsList>
         </div>
         <Spin
-          spinning={loading}
+          spinning={loading && isAtTop}
           className={classNames({
-            loading: loading
+            loading: loading && isAtTop
           })}
         ></Spin>
         {totalPage > 1 && (
@@ -322,8 +238,6 @@ const LogsViewer: React.FC<LogsViewerProps> = forwardRef((props, ref) => {
                 pageSize={pageSize}
                 onNext={getNextPage}
                 onPrev={getPrePage}
-                onToFirst={handleonToFirst}
-                onBackend={handleonBackend}
               ></LogsPagination>
             </div>
           </div>

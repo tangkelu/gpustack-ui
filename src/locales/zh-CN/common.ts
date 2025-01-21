@@ -194,7 +194,7 @@ export default {
   'common.form.password': '密码',
   'common.form.username': '用户名',
   'common.login.rember': '记住我',
-  'settings.company': '数澈软件',
+  'settings.company': 'GPUCluster',
   'common.button.help': '帮助',
   'common.button.feedback': '反馈',
   'common.button.docs': '文档',
@@ -210,7 +210,7 @@ export default {
   'common.text.new': '新',
   'common.text.changelog': '更新日志',
   'common.button.recreate': '重新创建',
-  'common.button.delrecreate': '删除（重建）',
+  'common.button.delrecreate': '删除(重建)',
   'common.options.all': '全部',
   'common.options.none': '无',
   'common.options.auto': '自动'

@@ -159,30 +159,6 @@ export const modelSourceValueMap = {
   [modelSourceMap.local_path_value]: modelSourceMap.local_path
 };
 
-export const sourceOptions = [
-  {
-    label: 'Hugging Face',
-    value: modelSourceMap.huggingface_value,
-    key: 'huggingface'
-  },
-  {
-    label: 'Ollama Library',
-    value: modelSourceMap.ollama_library_value,
-    key: 'ollama_library'
-  },
-  {
-    label: 'ModelScope',
-    value: modelSourceMap.modelscope_value,
-    key: 'model_scope'
-  },
-  {
-    label: 'models.form.localPath',
-    locale: true,
-    value: modelSourceMap.local_path_value,
-    key: 'local_path'
-  }
-];
-
 export const InstanceStatusMap = {
   Initializing: 'initializing',
   Starting: 'starting',
@@ -192,8 +168,7 @@ export const InstanceStatusMap = {
   Error: 'error',
   Downloading: 'downloading',
   Unknown: 'unknown',
-  Analyzing: 'analyzing',
-  Unreachable: 'unreachable'
+  Analyzing: 'analyzing'
 };
 
 export const InstanceRealLogStatus = [
@@ -210,8 +185,7 @@ export const InstanceStatusMapValue = {
   [InstanceStatusMap.Downloading]: 'Downloading',
   [InstanceStatusMap.Unknown]: 'Unknown',
   [InstanceStatusMap.Analyzing]: 'Analyzing',
-  [InstanceStatusMap.Starting]: 'Starting',
-  [InstanceStatusMap.Unreachable]: 'Unreachable'
+  [InstanceStatusMap.Starting]: 'Starting'
 };
 
 export const status: any = {
@@ -223,8 +197,7 @@ export const status: any = {
   [InstanceStatusMap.Downloading]: StatusMaps.transitioning,
   [InstanceStatusMap.Unknown]: StatusMaps.inactive,
   [InstanceStatusMap.Analyzing]: StatusMaps.transitioning,
-  [InstanceStatusMap.Starting]: StatusMaps.transitioning,
-  [InstanceStatusMap.Unreachable]: StatusMaps.error
+  [InstanceStatusMap.Starting]: StatusMaps.transitioning
 };
 
 export const ActionList = [
@@ -275,18 +248,16 @@ export const modelCategoriesMap = {
   text_to_speech: 'text_to_speech',
   speech_to_text: 'speech_to_text',
   embedding: 'embedding',
-  reranker: 'reranker',
-  llm: 'llm'
+  reranker: 'reranker'
 };
 
 export const modelCategories = [
   { label: 'common.options.auto', value: null, locale: true },
-  { label: 'LLM', value: modelCategoriesMap.llm },
-  { label: 'Image', value: modelCategoriesMap.image },
-  { label: 'Text-to-Speech', value: modelCategoriesMap.text_to_speech },
-  { label: 'Speech-to-Text', value: modelCategoriesMap.speech_to_text },
-  { label: 'Embedding', value: modelCategoriesMap.embedding },
-  { label: 'Reranker', value: modelCategoriesMap.reranker }
+  { label: 'Image', value: 'image' },
+  { label: 'Text-to-speech', value: 'text_to_speech' },
+  { label: 'Speech-to-text', value: 'speech_to_text' },
+  { label: 'Embedding', value: 'embedding' },
+  { label: 'Reranker', value: 'reranker' }
 ];
 
 export const sourceRepoConfig = {

@@ -1,4 +1,3 @@
-import LogoIcon from '@/assets/images/gpustack-logo.png';
 import { initialPasswordAtom, userAtom } from '@/atoms/user';
 import LangSelect from '@/components/lang-select';
 import SealInput from '@/components/seal-form/seal-input';
@@ -42,11 +41,12 @@ const LoginForm = () => {
           <span>
             {intl?.formatMessage({ id: 'users.login.title' }, { name: '' })}
           </span>
-          <img
+          <text style={{ height: '32px', marginLeft: 10 }}>GPUCluster</text>
+          {/* <img
             src={LogoIcon}
             alt="logo"
             style={{ height: '24px', marginLeft: 10 }}
-          />
+          /> */}
         </div>
       </div>
     );

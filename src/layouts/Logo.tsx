@@ -1,13 +1,13 @@
 // @ts-nocheck
-import GpustackLogo from '@/assets/images/gpustack-logo.png';
-import SmallLogo from '@/assets/images/small-logo-200x200.png';
 import React from 'react';
 
 const LogoIcon: React.FC = () => {
-  return <img src={GpustackLogo} alt="logo" style={{ height: 16 }} />;
+  // return <img src={GPUClusterLogo} alt="logo" style={{ height: 16 }} />;
+  return <h2>GPUCluster</h2>;
 };
 const SLogoIcon: React.FC = () => {
-  return <img src={SmallLogo} alt="logo" style={{ height: 24 }} />;
+  // return <img src={SmallLogo} alt="logo" style={{ height: 24 }} />;
+  return <h2>GPUCluster</h2>;
 };
 
 export { LogoIcon, SLogoIcon };

@@ -6,7 +6,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
 import { Form, InputNumber, Slider, Tooltip } from 'antd';
 import _ from 'lodash';
-import { memo, useCallback, useEffect, useId, useState } from 'react';
+import { memo, useCallback, useEffect, useId } from 'react';
 import CustomLabelStyles from '../style/custom-label.less';
 
 type ParamsSettingsFormProps = {
@@ -29,14 +29,12 @@ type ParamsSettingsProps = {
   globalParams?: ParamsSettingsFormProps;
 };
 
-const METAKEYS: Record<string, any> = {
+const METAKEYS: Record<string, string> = {
   seed: 'seed',
   stop: 'stop',
   temperature: 'temperature',
   top_p: 'top_p',
-  n_ctx: 'n_ctx',
-  n_slot: 'n_slot',
-  max_model_len: 'max_model_len'
+  max_tokens: 'n_ctx'
 };
 
 const ParamsSettings: React.FC<ParamsSettingsProps> = ({
@@ -58,8 +56,6 @@ const ParamsSettings: React.FC<ParamsSettingsProps> = ({
   };
   const [form] = Form.useForm();
   const formId = useId();
-  const [metaData, setMetaData] = useState<Record<string, any>>({});
-  const [firstLoad, setFirstLoad] = useState(true);
 
   const handleOnFinish = (values: any) => {
     console.log('handleOnFinish', values);
@@ -101,36 +97,19 @@ const ParamsSettings: React.FC<ParamsSettingsProps> = ({
   const handleModelChange = (val: string) => {
     const model = _.find(modelList, { value: val });
     const modelMeta = model?.meta || {};
-    const modelMetaValue = _.pick(modelMeta, _.keys(METAKEYS));
-    const obj = Object.entries(METAKEYS).reduce((acc: any, [key, value]) => {
-      const val = modelMetaValue[key];
-      if (val && _.hasIn(modelMetaValue, key)) {
-        acc[value] = val;
-      }
-      return acc;
-    }, {});
-
-    let defaultMaxTokens = 1024;
-
-    if (obj.n_ctx && obj.n_slot) {
-      defaultMaxTokens = _.divide(obj.n_ctx / 2, obj.n_slot);
-    } else if (obj.max_model_len) {
-      defaultMaxTokens = obj.max_model_len / 2;
-    }
-
-    form.setFieldsValue({
-      ..._.omit(obj, ['n_ctx', 'n_slot', 'max_model_len']),
-      max_tokens: defaultMaxTokens
+    const keys = Object.keys(METAKEYS).map((k: string) => {
+      return METAKEYS[k];
     });
-
-    setMetaData({
-      ...obj,
-      max_tokens: obj.max_model_len || _.divide(obj.n_ctx, obj.n_slot)
-    });
-    return {
-      ..._.omit(obj, ['n_ctx', 'n_slot', 'max_model_len']),
-      max_tokens: defaultMaxTokens
-    };
+    const modelMetaKeys = _.pick(modelMeta, keys);
+    const obj = _.reduce(
+      METAKEYS,
+      (result: any, value: any, key: string) => {
+        result[key] = modelMetaKeys[value];
+        return result;
+      },
+      {}
+    );
+    return obj;
   };
 
   useEffect(() => {
@@ -139,24 +118,21 @@ const ParamsSettings: React.FC<ParamsSettingsProps> = ({
       model = model || _.get(modelList, '[0].value');
     }
     const modelMetaData = handleModelChange(model);
-    const mergeData = _.merge({}, initialValues, modelMetaData);
-
     form.setFieldsValue({
-      ...mergeData,
+      ...initialValues,
+      ...modelMetaData,
       model: model
     });
     setParams({
-      ...mergeData,
+      ...initialValues,
+      ...modelMetaData,
       model: model
     });
-    setFirstLoad(false);
   }, [modelList, showModelSelector, selectedModel]);
 
   useEffect(() => {
-    if (!firstLoad) {
-      form.setFieldsValue(globalParams);
-    }
-  }, [globalParams, firstLoad]);
+    form.setFieldsValue(globalParams);
+  }, [globalParams]);
 
   const renderLabel = (args: {
     field: string;
@@ -221,11 +197,7 @@ const ParamsSettings: React.FC<ParamsSettingsProps> = ({
                 }
               ]}
             >
-              <SealSelect
-                showSearch={true}
-                options={modelList}
-                onChange={handleModelChange}
-              ></SealSelect>
+              <SealSelect showSearch={true} options={modelList}></SealSelect>
             </Form.Item>
           </>
         )}
@@ -275,7 +247,7 @@ const ParamsSettings: React.FC<ParamsSettingsProps> = ({
           >
             <Slider
               defaultValue={2048}
-              max={metaData.max_tokens || 16 * 1024}
+              max={16 * 1024}
               step={1}
               style={{ marginBottom: 0, marginTop: 16, marginInline: 0 }}
               tooltip={{ open: false }}

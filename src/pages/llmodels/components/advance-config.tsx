@@ -3,7 +3,6 @@ import LabelSelector from '@/components/label-selector';
 import ListInput from '@/components/list-input';
 import SealInput from '@/components/seal-form/seal-input';
 import SealSelect from '@/components/seal-form/seal-select';
-import TooltipList from '@/components/tooltip-list';
 import { PageActionType } from '@/config/types';
 import { InfoCircleOutlined, RightOutlined } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
@@ -38,18 +37,12 @@ interface AdvanceConfigProps {
 }
 
 const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
-  const { form, isGGUF, action, gpuOptions, source } = props;
+  const { form, gpuOptions, isGGUF, action, source } = props;
 
   const intl = useIntl();
   const wokerSelector = Form.useWatch('worker_selector', form);
   const scheduleType = Form.useWatch('scheduleType', form);
   const backend = Form.useWatch('backend', form);
-  const backend_parameters = Form.useWatch('backend_parameters', form);
-  const categories = Form.useWatch('categories', form);
-  const backend_version = Form.useWatch('backend_version', form);
-  const placement_strategy = Form.useWatch('placement_strategy', form);
-  const gpuSelectorIds = Form.useWatch('gpu_selector.gpu_ids', form);
-  const worker_selector = Form.useWatch('worker_selector', form);
 
   const placementStrategyTips = [
     {
@@ -99,7 +92,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
     if (backend === backendOptionsMap.llamaBox) {
       return {
         backend: 'llama-box',
-        link: 'https://github.com/gpustack/llama-box?tab=readme-ov-file#usage'
+        link: 'https://github.com/GPUCluster/llama-box?tab=readme-ov-file#usage'
       };
     }
     if (backend === backendOptionsMap.vllm) {
@@ -111,6 +104,31 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
     return null;
   }, [backend]);
 
+  const renderSelectTips = (list: Array<{ title: string; tips: string }>) => {
+    return (
+      <div>
+        {list.map((item, index) => {
+          return (
+            <div className="m-b-8" key={index}>
+              <Typography.Title
+                level={5}
+                style={{
+                  color: 'var(--color-white-1)',
+                  marginRight: 10
+                }}
+              >
+                {item.title}:
+              </Typography.Title>
+              <Typography.Text style={{ color: 'var(--color-white-1)' }}>
+                {item.tips}
+              </Typography.Text>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const handleWorkerLabelsChange = useCallback(
     (labels: Record<string, any>) => {
       form.setFieldValue('worker_selector', labels);
@@ -120,6 +138,16 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
 
   const handleBackendParametersChange = useCallback((list: string[]) => {
     form.setFieldValue('backend_parameters', list);
+  }, []);
+
+  const handleBackendChange = useCallback((val: string) => {
+    if (val === backendOptionsMap.llamaBox) {
+      form.setFieldsValue({
+        distributed_inference_across_workers: true,
+        cpu_offloading: true
+      });
+    }
+    form.setFieldValue('backend_version', '');
   }, []);
 
   const collapseItems = useMemo(() => {
@@ -137,7 +165,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
         <Form.Item name="scheduleType">
           <SealSelect
             label={intl.formatMessage({ id: 'models.form.scheduletype' })}
-            description={<TooltipList list={scheduleTypeTips}></TooltipList>}
+            description={renderSelectTips(scheduleTypeTips)}
             options={[
               {
                 label: intl.formatMessage({
@@ -162,9 +190,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
                   id: 'resources.form.placementStrategy'
                 })}
                 options={placementStrategyOptions}
-                description={
-                  <TooltipList list={placementStrategyTips}></TooltipList>
-                }
+                description={renderSelectTips(placementStrategyTips)}
               ></SealSelect>
             </Form.Item>
             <Form.Item<FormData>
@@ -238,8 +264,8 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
               tagRender={(props) => {
                 return (
                   <AutoTooltip
-                    className="m-r-4"
-                    closable={props.closable}
+                    className="m-r-0"
+                    closable={true}
                     onClose={props.onClose}
                     maxWidth={240}
                   >
@@ -287,6 +313,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
                     { backend: backendParamsTips.backend || '' }
                   )}{' '}
                   <Typography.Link
+                    style={{ color: 'var(--ant-blue-4)' }}
                     href={backendParamsTips.link}
                     target="_blank"
                   >
@@ -377,13 +404,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
     scheduleType,
     wokerSelector,
     backend,
-    backend_parameters,
-    isGGUF,
-    categories,
-    backend_version,
-    placement_strategy,
-    gpuSelectorIds,
-    worker_selector
+    isGGUF
   ]);
 
   return (

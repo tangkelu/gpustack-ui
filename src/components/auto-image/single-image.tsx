@@ -1,7 +1,6 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { Progress, ProgressProps } from 'antd';
+import { Progress } from 'antd';
 import classNames from 'classnames';
-import { round } from 'lodash';
 import ResizeObserver from 'rc-resize-observer';
 import React, { useCallback } from 'react';
 import AutoImage from './index';
@@ -22,7 +21,6 @@ interface SingleImageProps {
   autoBgColor?: boolean;
   editable?: boolean;
   style?: React.CSSProperties;
-  loadingSize?: ProgressProps['size'];
   progressType?: 'line' | 'circle' | 'dashboard';
   progressColor?: string;
   progressWidth?: number;
@@ -41,11 +39,13 @@ const SingleImage: React.FC<SingleImageProps> = (props) => {
     progress,
     maxHeight,
     maxWidth,
-    dataUrl = '',
+    dataUrl,
     style,
     autoBgColor,
+    progressColor = 'var(--ant-color-primary)',
+    progressWidth = 2,
     preview = true,
-    loadingSize = 'default'
+    progressType = 'dashboard'
   } = props;
 
   const imgWrapper = React.useRef<HTMLSpanElement>(null);
@@ -135,12 +135,11 @@ const SingleImage: React.FC<SingleImageProps> = (props) => {
                 }}
               >
                 <Progress
-                  percent={round(progress, 0)}
+                  percent={progress}
                   type="dashboard"
-                  size={loadingSize}
                   steps={{ count: 50, gap: 2 }}
                   format={() => (
-                    <span className="font-size-20">{round(progress, 0)}%</span>
+                    <span className="font-size-20">{progress}%</span>
                   )}
                   trailColor="var(--ant-color-fill-secondary)"
                 />
@@ -165,14 +164,12 @@ const SingleImage: React.FC<SingleImageProps> = (props) => {
                 {progress && progress < 100 && (
                   <span className="small-progress-wrap">
                     <Progress
-                      percent={round(progress, 0)}
+                      percent={progress}
                       type="dashboard"
                       size="small"
                       steps={{ count: 25, gap: 3 }}
                       format={() => (
-                        <span className="font-size-12">
-                          {round(progress, 0)}%
-                        </span>
+                        <span className="font-size-12">{progress}%</span>
                       )}
                       strokeColor="var(--color-white-secondary)"
                       trailColor="var(--ant-color-fill-secondary)"

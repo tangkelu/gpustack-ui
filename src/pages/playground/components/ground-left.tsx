@@ -164,6 +164,7 @@ const GroundLeft: React.FC<MessageProps> = forwardRef((props, ref) => {
         url: CHAT_API,
         signal
       });
+
       if (result?.error) {
         setTokenResult({
           error: true,
@@ -185,7 +186,7 @@ const GroundLeft: React.FC<MessageProps> = forwardRef((props, ref) => {
         joinMessage(chunk);
       });
     } catch (error) {
-      console.log('error:', error);
+      // console.log('error:', error);
     } finally {
       setLoading(false);
     }
@@ -227,8 +228,6 @@ const GroundLeft: React.FC<MessageProps> = forwardRef((props, ref) => {
     setMessageList(userMsg);
   };
 
-  const throttleUpdatePosition = _.throttle(updateScrollerPosition, 100);
-
   useEffect(() => {
     if (scroller.current) {
       initialize(scroller.current);
@@ -243,7 +242,6 @@ const GroundLeft: React.FC<MessageProps> = forwardRef((props, ref) => {
 
   useEffect(() => {
     if (loading) {
-      console.log('loading:', loading);
       updateScrollerPosition();
     }
   }, [messageList, loading]);

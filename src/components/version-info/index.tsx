@@ -1,5 +1,4 @@
-import Logo from '@/assets/images/gpustack-logo.png';
-import { GPUStackVersionAtom, UpdateCheckAtom, userAtom } from '@/atoms/user';
+import { GPUClusterVersionAtom, UpdateCheckAtom, userAtom } from '@/atoms/user';
 import { getAtomStorage } from '@/atoms/utils';
 import externalLinks from '@/constants/external-links';
 import { Button } from 'antd';
@@ -8,7 +7,7 @@ import './index.less';
 
 const VersionInfo: React.FC<{ intl: any }> = ({ intl }) => {
   const latestVersion = getAtomStorage(UpdateCheckAtom).latest_version;
-  const currentVersion = getAtomStorage(GPUStackVersionAtom)?.version;
+  const currentVersion = getAtomStorage(GPUClusterVersionAtom)?.version;
 
   const isProd =
     currentVersion?.indexOf('rc') === -1 &&
@@ -18,9 +17,9 @@ const VersionInfo: React.FC<{ intl: any }> = ({ intl }) => {
 
   return (
     <div className="version-box">
-      <div className="img">
+      {/* <div className="img">
         <img src={Logo} alt="logo" />
-      </div>
+      </div> */}
 
       <div className="ver">
         {isProd && (
@@ -30,8 +29,8 @@ const VersionInfo: React.FC<{ intl: any }> = ({ intl }) => {
         )}
         {isProd ? (
           <span className="val">
-            {getAtomStorage(GPUStackVersionAtom)?.version ||
-              getAtomStorage(GPUStackVersionAtom)?.git_commit}
+            {getAtomStorage(GPUClusterVersionAtom)?.version ||
+              getAtomStorage(GPUClusterVersionAtom)?.git_commit}
           </span>
         ) : (
           <span className="val dev">
@@ -41,8 +40,8 @@ const VersionInfo: React.FC<{ intl: any }> = ({ intl }) => {
                 {intl.formatMessage({ id: 'common.footer.version.server' })}
               </span>
               {currentVersion.indexOf('0.0.0') > -1
-                ? getAtomStorage(GPUStackVersionAtom)?.git_commit
-                : getAtomStorage(GPUStackVersionAtom)?.version}
+                ? getAtomStorage(GPUClusterVersionAtom)?.git_commit
+                : getAtomStorage(GPUClusterVersionAtom)?.version}
             </span>
             <span className="item">
               <span className="tl">UI</span>
@@ -52,7 +51,7 @@ const VersionInfo: React.FC<{ intl: any }> = ({ intl }) => {
         )}
       </div>
       {getAtomStorage(userAtom)?.is_admin && isProd && (
-        <div className="upgrade-text">
+        <div className="upgrade">
           <span className="m-l-5">
             {latestVersion &&
             latestVersion !== currentVersion &&

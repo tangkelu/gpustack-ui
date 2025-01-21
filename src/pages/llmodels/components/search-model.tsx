@@ -257,19 +257,19 @@ const SearchModel: React.FC<SearchInputProps> = (props) => {
                 <Tooltip
                   overlayInnerStyle={{ width: 'max-content' }}
                   title={
-                    <ul className="tips-desc-list">
-                      <li>
+                    <div>
+                      <div>
                         {intl.formatMessage({ id: 'models.search.gguf.tips' })}
-                      </li>
-                      <li>
+                      </div>
+                      <div>
                         {intl.formatMessage({ id: 'models.search.vllm.tips' })}
-                      </li>
-                      <li>
+                      </div>
+                      <div>
                         {intl.formatMessage({
                           id: 'models.search.voxbox.tips'
                         })}
-                      </li>
-                    </ul>
+                      </div>
+                    </div>
                   }
                 >
                   GGUF

@@ -4,7 +4,7 @@ export default {
   'playground.system': '系统',
   'playground.systemMessage': '系统消息',
   'playground.user': '用户',
-  'playground.assistant': 'AI助手',
+  'playground.assistant': '小助手',
   'playground.newMessage': '新消息',
   'playground.viewcode': '查看代码',
   'playground.model': '模型',
@@ -119,7 +119,7 @@ export default {
   'playgorund.audio.voice.error':
     '声音无法使用。该模型可能仍在初始化。请稍候后刷新。',
   'playground.params.size.description':
-    '图片生成的最大尺寸受控于模型的部署参数。<a href="https://github.com/gpustack/llama-box" target="_blank">参考文档</a>',
+    '图片生成的最大尺寸受控于模型的部署参数。<a href="https://github.com/GPUCluster/llama-box" target="_blank">参考文档</a>',
   'playground.documents.verify.embedding': '至少输入两条文本',
   'playground.documents.verify.rerank': '文档不能为空',
   'playground.image.guidance.tip': '引导比例，影响图片的质量和多样性',
@@ -128,10 +128,6 @@ export default {
   'playground.image.strength.tip': '值越高，它对原图的修改越大',
   'playground.image.edit.tips': '点击或拖动图片到此区域上传',
   'playground.image.saveMask': '保存遮罩',
-  'playground.image.negativeMask': '反向遮罩',
   'playground.image.brushSize': '画笔大小',
-  'playground.image.download': '下载图片',
-  'playground.image.generate': '生成图片',
-  'playground.image.edit': '编辑图片',
-  'playground.image.fitview': '适应视图'
+  'playground.image.download': '下载图片'
 };

@@ -2,7 +2,6 @@ import IconFont from '@/components/icon-font';
 import breakpoints from '@/config/breakpoints';
 import HotKeys from '@/config/hotkeys';
 import useWindowResize from '@/hooks/use-window-resize';
-import { modelCategoriesMap } from '@/pages/llmodels/config';
 import { MessageOutlined, OneToOneOutlined } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
@@ -80,7 +79,7 @@ const Playground: React.FC = () => {
     const getModelList = async () => {
       try {
         const params = {
-          categories: modelCategoriesMap.llm,
+          categories: '',
           with_meta: true
         };
         const res = await queryModelsList(params);

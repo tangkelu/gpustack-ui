@@ -1,9 +1,6 @@
-import { GPUStackVersionAtom } from '@/atoms/user';
-import { getAtomStorage } from '@/atoms/utils';
 import VersionInfo, { modalConfig } from '@/components/version-info';
-import externalLinks from '@/constants/external-links';
 import { useIntl } from '@umijs/max';
-import { Button, Modal, Space } from 'antd';
+import { Modal, Space } from 'antd';
 import './index.less';
 
 const Footer: React.FC = () => {
@@ -28,17 +25,17 @@ const Footer: React.FC = () => {
               <span> {intl.formatMessage({ id: 'settings.company' })}</span>
             </Space>
             <Space size={8} style={{ marginLeft: 18 }}>
-              <Button
+              {/* <Button
                 type="link"
                 size="small"
                 href={externalLinks.documentation}
                 target="_blank"
               >
                 {intl.formatMessage({ id: 'common.button.help' })}
-              </Button>
-              <Button type="link" size="small" onClick={showVersion}>
-                {getAtomStorage(GPUStackVersionAtom)?.version}
-              </Button>
+              </Button> */}
+              {/* <Button type="link" size="small" onClick={showVersion}>
+                {getAtomStorage(GPUClusterVersionAtom)?.version}
+              </Button> */}
             </Space>
           </div>
         </div>

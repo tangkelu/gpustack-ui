@@ -60,20 +60,12 @@ export default [
     ]
   },
   {
-    name: 'modelCatalog',
-    path: '/models/catalog',
-    key: 'modelsCatalog',
-    icon: 'icon-catalog',
-    access: 'canSeeAdmin',
-    component: './llmodels/catalog'
-  },
-  {
     name: 'models',
-    path: '/models/list',
+    path: '/models',
     key: 'models',
     icon: 'Block',
     access: 'canSeeAdmin',
-    component: './llmodels/index'
+    component: './llmodels'
   },
   {
     name: 'resources',

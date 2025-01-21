@@ -2,38 +2,30 @@ import { WatchEventType } from '@/config';
 import { useEffect, useRef } from 'react';
 
 interface ChunkedCollection {
-  ids: string[] | number[];
+  ids: string[];
   data: any;
   collection: any[];
   type: string | number;
 }
-
-type EventsType = 'CREATE' | 'UPDATE' | 'DELETE' | 'INSERT';
-
 // Only used to update lists without nested state
 export function useUpdateChunkedList(options: {
-  events?: EventsType[];
   dataList?: any[];
   limit?: number;
-  setDataList: (args: any, opts?: any) => void;
+  setDataList: (args: any) => void;
   callback?: (args: any) => void;
   filterFun?: (args: any) => boolean;
   mapFun?: (args: any) => any;
   computedID?: (d: object) => string;
 }) {
-  const { events = ['CREATE', 'DELETE', 'UPDATE', 'INSERT'] } = options;
-  const deletedIdsRef = useRef<Set<number | string>>(new Set());
   const cacheDataListRef = useRef<any[]>(options.dataList || []);
   const timerRef = useRef<any>(null);
+  const countRef = useRef<number>(0);
   const limit = options.limit || 10;
 
   useEffect(() => {
     cacheDataListRef.current = [...(options.dataList || [])];
   }, [options.dataList]);
 
-  const setDeletedIds = (ids: number[]) => {
-    deletedIdsRef.current = new Set([...deletedIdsRef.current, ...ids]);
-  };
   const debounceUpdateChunckedList = () => {
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
@@ -59,9 +51,9 @@ export function useUpdateChunkedList(options: {
     if (options?.mapFun) {
       collections = data?.collection?.map(options?.mapFun);
     }
-    const ids: any[] = data?.ids || [];
+    const ids = data?.ids || [];
     // CREATE
-    if (data?.type === WatchEventType.CREATE && events.includes('CREATE')) {
+    if (data?.type === WatchEventType.CREATE) {
       const newDataList = collections.reduce((acc: any[], item: any) => {
         const updateIndex = cacheDataListRef.current?.findIndex(
           (sItem: any) => sItem.id === item.id
@@ -81,19 +73,16 @@ export function useUpdateChunkedList(options: {
       ].slice(0, limit);
     }
     // DELETE
-    if (data?.type === WatchEventType.DELETE && events.includes('DELETE')) {
+    if (data?.type === WatchEventType.DELETE) {
       cacheDataListRef.current = cacheDataListRef.current?.filter(
         (item: any) => {
           return !ids?.includes(item.id);
         }
       );
-      setDeletedIds(ids as number[]);
-      options.setDataList?.([...cacheDataListRef.current], {
-        deletedIds: [...deletedIdsRef.current]
-      });
+      options.setDataList?.([...cacheDataListRef.current]);
     }
     // UPDATE
-    if (data?.type === WatchEventType.UPDATE && events.includes('UPDATE')) {
+    if (data?.type === WatchEventType.UPDATE) {
       collections?.forEach((item: any) => {
         const updateIndex = cacheDataListRef.current?.findIndex(
           (sItem: any) => sItem.id === item.id
@@ -101,7 +90,7 @@ export function useUpdateChunkedList(options: {
         const updateItem = { ...item };
         if (updateIndex > -1) {
           cacheDataListRef.current[updateIndex] = updateItem;
-        } else if (updateIndex === -1 && events.includes('INSERT')) {
+        } else if (updateIndex === -1) {
           cacheDataListRef.current = [
             updateItem,
             ...cacheDataListRef.current.slice(0, limit - 1)
@@ -117,8 +106,7 @@ export function useUpdateChunkedList(options: {
   };
   return {
     updateChunkedList,
-    cacheDataListRef,
-    deletedIdsRef
+    cacheDataListRef
   };
 }
 

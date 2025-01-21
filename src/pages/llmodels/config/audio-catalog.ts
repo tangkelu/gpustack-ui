@@ -104,77 +104,77 @@ export const ModelScopeModels = [
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-large-v2'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-large-v3'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-small.en'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-small'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-medium.en'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-medium'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-tiny'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-distil-whisper-large-v3'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-tiny.en'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-distil-whisper-large-v2'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-base'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-base.en'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-distil-whisper-medium.en'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-distil-whisper-small.en'
   },
   {
     type: 'stt',
-    org: 'gpustack',
+    org: 'GPUCluster',
     name: 'faster-whisper-large-v1'
   }
 ];

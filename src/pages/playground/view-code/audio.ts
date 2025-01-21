@@ -7,7 +7,7 @@ export const speechToTextCode = ({ api, parameters }: Record<string, any>) => {
   const curlCode = `
 curl ${host}${api} \\
 -H "Content-Type: multipart/form-data" \\
--H "Authorization: Bearer $\{YOUR_GPUSTACK_API_KEY}" \\
+-H "Authorization: Bearer $\{YOUR_GPUCluster_API_KEY}" \\
 -F file="@/path/to/file/audio.mp3;type=audio/mpeg" \\
 ${formatCurlArgs(parameters, true)}`
     .trim()
@@ -19,7 +19,7 @@ from openai import OpenAI\n
 audio_file = open("audio.mp3", "rb")
 client = OpenAI(
   base_url="${host}/v1-openai", 
-  api_key="YOUR_GPUSTACK_API_KEY"
+  api_key="YOUR_GPUCluster_API_KEY"
 )
 
 response = client.audio.transcriptions.create(\n${formatPyParams({
@@ -42,7 +42,7 @@ const fs = require("fs")
 const OpenAI = require("openai");
 
 const openai = new OpenAI({
-  "apiKey": "YOUR_GPUSTACK_API_KEY",
+  "apiKey": "YOUR_GPUCluster_API_KEY",
   "baseURL": "${host}/v1-openai"
 });
 
@@ -68,7 +68,7 @@ export const TextToSpeechCode = ({ api, parameters }: Record<string, any>) => {
   const curlCode = `
 curl ${host}${api} \\
 -H "Content-Type: multipart/form-data" \\
--H "Authorization: Bearer $\{YOUR_GPUSTACK_API_KEY}" \\
+-H "Authorization: Bearer $\{YOUR_GPUCluster_API_KEY}" \\
 ${formatCurlArgs(parameters, false)} \\\n--output output.${parameters.response_format}`.trim();
 
   // ========================= Python =========================
@@ -78,7 +78,7 @@ from openai import OpenAI\n
 output_file_path = Path(__file__).parent / "output.mp3"
 client = OpenAI(
   base_url="${host}/v1-openai", 
-  api_key="YOUR_GPUSTACK_API_KEY"
+  api_key="YOUR_GPUCluster_API_KEY"
 )
 
 response = client.audio.speech.create(\n${formatPyParams({ ...parameters })})\n
@@ -101,7 +101,7 @@ const OpenAI = require("openai");
 const ouptFile = path.resolve("./output.mp3");
 
 const openai = new OpenAI({
-  "apiKey": "YOUR_GPUSTACK_API_KEY",
+  "apiKey": "YOUR_GPUCluster_API_KEY",
   "baseURL": "${host}/v1-openai"
 });
 

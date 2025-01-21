@@ -3,7 +3,7 @@ import { atomWithStorage } from 'jotai/utils';
 
 export const userAtom = atomWithStorage<any>('userInfo', null);
 
-export const GPUStackVersionAtom = atom<{
+export const GPUClusterVersionAtom = atom<{
   version: string;
   git_commit: string;
   isProduction: boolean;

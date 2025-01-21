@@ -6,7 +6,7 @@ import { Button, Drawer } from 'antd';
 import { debounce } from 'lodash';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { backendOptionsMap, modelSourceMap } from '../config';
-import { FormData } from '../config/types';
+import { FormData, ListItem } from '../config/types';
 import ColumnWrapper from './column-wrapper';
 import DataForm from './data-form';
 import HFModelFile from './hf-model-file';
@@ -19,11 +19,29 @@ type AddModalProps = {
   title: string;
   action: PageActionType;
   open: boolean;
+  data?: ListItem;
   source: string;
   width?: string | number;
   onOk: (values: FormData) => void;
   onCancel: () => void;
 };
+
+const steps = [
+  {
+    element: '#filterGGUF',
+    popover: {
+      title: '筛选模型',
+      description: 'Select a model from the list'
+    }
+  },
+  {
+    element: '#backend-field',
+    popover: {
+      title: '选择推理后端',
+      description: 'Select a model from the list'
+    }
+  }
+];
 
 const AddModal: React.FC<AddModalProps> = (props) => {
   const {
@@ -39,7 +57,10 @@ const AddModal: React.FC<AddModalProps> = (props) => {
     modelSourceMap.huggingface_value,
     modelSourceMap.modelscope_value
   ];
-
+  // const { start } = useDriver({
+  //   steps,
+  //   id: 'deploy-model'
+  // });
   const form = useRef<any>({});
   const intl = useIntl();
   const [selectedModel, setSelectedModel] = useState<any>({});
@@ -104,6 +125,14 @@ const AddModal: React.FC<AddModalProps> = (props) => {
       setSelectedModel({});
     };
   }, [open, source]);
+
+  // useEffect(() => {
+  //   if (open && loadfinish) {
+  //     setTimeout(() => {
+  //       start();
+  //     }, 1000);
+  //   }
+  // }, [loadfinish, open]);
 
   return (
     <Drawer
